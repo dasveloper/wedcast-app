@@ -13,7 +13,8 @@ import {
   Image,
   SafeAreaView,
   Animated,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from "react-native";
 import { Icon, Avatar,Input, Button  } from "react-native-elements";
 import firebase from "react-native-firebase";
@@ -92,7 +93,7 @@ export default class CreateFeed extends Component {
   }
   saveSelected = async () => {
     for (let image of this.state.downloadList) {
-      CameraRoll.saveToCameraRoll(image.uri);
+      this.saveToCameraRoll(image);
     }
     this.setState({
       downloadingSelected: false,
@@ -111,15 +112,14 @@ export default class CreateFeed extends Component {
 
   saveToCameraRoll = async image => {
     if (Platform.OS === "android") {
-      RNFetchBlob.config({
+      await RNFetchBlob.config({
         fileCache: true,
         appendExt: "jpg"
       })
-        //.fetch('GET', imagePreview)
+        .fetch('GET', image.uri)
         .then(res => {
-          CameraRoll.saveToCameraRoll(res.path())
-            .then(Alert.alert("Success", "Photo added to camera roll!"))
-            .catch(err => console.log("err:", err));
+           CameraRoll.saveToCameraRoll(res.path())
+          
         });
     } else {
       await CameraRoll.saveToCameraRoll(image.uri);
@@ -363,7 +363,6 @@ export default class CreateFeed extends Component {
               })}
             />
           )}
-          /> }
         </View>
         {bottomMenu}
       </SafeAreaView>

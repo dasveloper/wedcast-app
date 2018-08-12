@@ -16,7 +16,6 @@ import {
   ListItem,
   Icon,
   Avatar,
-  PricingCard,
   CheckBox
 } from "react-native-elements";
 
@@ -37,29 +36,8 @@ import { ViewPager } from "rn-viewpager";
 
 import StepIndicator from "react-native-step-indicator";
 
-const thirdIndicatorStyles = {
-  stepIndicatorSize: 25,
-  currentStepIndicatorSize: 30,
-  separatorStrokeWidth: 2,
-  currentStepStrokeWidth: 3,
-  stepStrokeCurrentColor: "#1F9FAC",
-  stepStrokeWidth: 3,
-  stepStrokeFinishedColor: "#1F9FAC",
-  stepStrokeUnFinishedColor: "#dedede",
-  separatorFinishedColor: "#1F9FAC",
-  separatorUnFinishedColor: "#dedede",
-  stepIndicatorFinishedColor: "#1F9FAC",
-  stepIndicatorUnFinishedColor: "#ffffff",
-  stepIndicatorCurrentColor: "#ffffff",
-  stepIndicatorLabelFontSize: 0,
-  currentStepIndicatorLabelFontSize: 0,
-  stepIndicatorLabelCurrentColor: "transparent",
-  stepIndicatorLabelFinishedColor: "transparent",
-  stepIndicatorLabelUnFinishedColor: "transparent",
-  labelColor: "#999999",
-  labelSize: 13,
-  currentStepLabelColor: "#1F9FAC"
-};
+
+
 
 const getStepIndicatorIconConfig = ({ position, stepStatus }) => {
   const iconConfig = {
@@ -109,18 +87,75 @@ export default class App extends Component {
 
   linkPhone = () => {
     let self = this;
-    if (!this.phone.isValidNumber()){
-      this.setState({errorMessage: "Invalid phone number"});
+    if (!this.phone.isValidNumber()) {
+      this.setState({ errorMessage: "Invalid phone number" });
       return;
     }
+
     firebase
       .auth()
       .verifyPhoneNumber(self.state.phoneNumber)
-
       .on(
         "state_changed",
-        phoneAuthSnapshot => {},
+        phoneAuthSnapshot => {
+          // How you handle these state events is entirely up to your ui flow and whether
+          // you need to support both ios and android. In short: not all of them need to
+          // be handled - it's entirely up to you, your ui and supported platforms.
+
+          // E.g you could handle android specific events only here, and let the rest fall back
+          // to the optionalErrorCb or optionalCompleteCb functions
+          switch (phoneAuthSnapshot.state) {
+            // ------------------------
+            //  IOS AND ANDROID EVENTS
+            // ------------------------
+            case firebase.auth.PhoneAuthState.CODE_SENT: // or 'sent'
+              self.setState({
+                phoneSubmitted: true,
+                disableNext: true,
+                confirmResult: phoneAuthSnapshot
+
+              });
+
+              // on ios this is the final phone auth state event you'd receive
+              // so you'd then ask for user input of the code and build a credential from it
+              // as demonstrated in the `signInWithPhoneNumber` example above
+              break;
+            case firebase.auth.PhoneAuthState.ERROR: // or 'error'
+              alert("verification error");
+              alert(phoneAuthSnapshot.error);
+              break;
+              self.setState({
+                phoneSubmitted: false
+              });
+            // ---------------------
+            // ANDROID ONLY EVENTS
+            // ---------------------
+            case firebase.auth.PhoneAuthState.AUTO_VERIFY_TIMEOUT: // or 'timeout'
+              //console.log('auto verify on android timed out');
+              //alert('no auto, show verification');
+
+              // proceed with your manual code input flow, same as you would do in
+              // CODE_SENT if you were on IOS
+              break;
+            case firebase.auth.PhoneAuthState.AUTO_VERIFIED: // or 'verified'
+              // auto verified means the code has also been automatically confirmed as correct/received
+              // phoneAuthSnapshot.code will contain the auto verified sms code - no need to ask the user for input.
+              alert("auto verified on android");
+              console.log(phoneAuthSnapshot);
+              // Example usage if handling here and not in optionalCompleteCb:
+              // const { verificationId, code } = phoneAuthSnapshot;
+              // const credential = firebase.auth.PhoneAuthProvider.credential(verificationId, code);
+
+              // Do something with your new credential, e.g.:
+              // firebase.auth().signInWithCredential(credential);
+              // firebase.auth().currentUser.linkWithCredential(credential);
+              // etc ...
+              break;
+          }
+        },
         error => {
+          // optionalErrorCb would be same logic as the ERROR case above,  if you've already handed
+          // the ERROR case in the above observer then there's no need to handle it here
           Alert.alert(
             "Something went wrong",
             error.nativeErrorMessage,
@@ -133,11 +168,18 @@ export default class App extends Component {
           );
         },
         phoneAuthSnapshot => {
-          self.setState({
-            confirmResult: phoneAuthSnapshot,
-            phoneSubmitted: true,
-            disableNext: true
-          });
+          // optionalCompleteCb would be same logic as the AUTO_VERIFIED/CODE_SENT switch cases above
+          // depending on the platform. If you've already handled those cases in the observer then
+          // there's absolutely no need to handle it here.
+
+          // Platform specific logic:
+          // - if this is on IOS then phoneAuthSnapshot.code will always be null
+          // - if ANDROID auto verified the sms code then phoneAuthSnapshot.code will contain the verified sms code
+          //   and there'd be no need to ask for user input of the code - proceed to credential creating logic
+          // - if ANDROID auto verify timed out then phoneAuthSnapshot.code would be null, just like ios, you'd
+          //   continue with user input logic.
+       
+          console.log(phoneAuthSnapshot);
         }
       );
   };
@@ -145,7 +187,6 @@ export default class App extends Component {
     const { verificationCode, confirmResult } = this.state;
     const { verificationId, code } = confirmResult;
     let self = this;
-
     if (confirmResult && verificationCode.length) {
       const credential = firebase.auth.PhoneAuthProvider.credential(
         verificationId,
@@ -226,20 +267,13 @@ export default class App extends Component {
     text = text.replace(/\s/g, "");
     text = text.replace(/[\W_]+/g, "");
     text = text.toLowerCase();
-    if (text.charAt(0) != "#") {
+    if (text.length && text.charAt(0) != "#") {
       text = "#" + text;
     }
     let hasInput = text.length === 0;
 
     this.setState({ disableNext: hasInput, castId: text });
   };
-  componentWillReceiveProps(nextProps, nextState) {
-    if (nextState.currentPage != this.state.currentPage) {
-      if (this.viewPager) {
-        this.viewPager.setPage(nextState.currentPage);
-      }
-    }
-  }
 
   componentDidMount() {
     const { currentUser } = firebase.auth();
@@ -256,27 +290,36 @@ export default class App extends Component {
   }
 
   render() {
+    let thirdIndicatorStyles = {
+      stepIndicatorSize: this.state.smallScreen? 20: 25,
+      currentStepIndicatorSize: this.state.smallScreen? 25 : 30,
+      separatorStrokeWidth: 2,
+      currentStepStrokeWidth: 3,
+      stepStrokeCurrentColor: "#1F9FAC",
+      stepStrokeWidth: 3,
+      stepStrokeFinishedColor: "#1F9FAC",
+      stepStrokeUnFinishedColor: "#dedede",
+      separatorFinishedColor: "#1F9FAC",
+      separatorUnFinishedColor: "#dedede",
+      stepIndicatorFinishedColor: "#1F9FAC",
+      stepIndicatorUnFinishedColor: "#ffffff",
+      stepIndicatorCurrentColor: "#ffffff",
+      stepIndicatorLabelFontSize: 0,
+      currentStepIndicatorLabelFontSize: 0,
+      stepIndicatorLabelCurrentColor: "transparent",
+      stepIndicatorLabelFinishedColor: "transparent",
+      stepIndicatorLabelUnFinishedColor: "transparent",
+      labelColor: "#999999",
+      labelSize: this.state.smallScreen? 10 : 14,
+      currentStepLabelColor: "#1F9FAC"
+    };
     const page1 = (
       <View style={styles.page}>
-        <Text
-          style={{
-            paddingHorizontal: 20,
-            fontSize: 18,
-            marginBottom: 10,
-            fontWeight: "bold"
-          }}
-        >
+        <Text style={styles.paginationHeader}>
           Create a name for your Wedcast
         </Text>
         {!this.state.inputFocused && (
-          <Text
-            style={{
-              paddingHorizontal: 20,
-              fontSize: 14,
-              textAlign: "center",
-              marginBottom: 20
-            }}
-          >
+          <Text style={styles.pagintationInfo}>
             This will be the name displayed to your guests.
           </Text>
         )}
@@ -288,48 +331,22 @@ export default class App extends Component {
               let hasInput = text.length === 0;
               this.setState({ feedName: text, disableNext: hasInput });
             }}
-            ref={component => (this.nameInput = component)}
             value={this.state.feedName}
-            autoCapitalize="none"
-            containerStyle={{
-              backgroundColor: "#f4f4f4",
-              margin: 0,
-              flex: 1,
-              alignSelf: "center",
-              borderRadius: 0,
-              borderTopLeftRadius: 5,
-              borderBottomLeftRadius: 5
-            }}
+            containerStyle={styles.pagintationInputContainer}
             maxLength={25}
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             inputContainerStyle={{ borderBottomWidth: 0 }}
-            inputStyle={{ fontSize: 20, height: 50 }}
+            inputStyle={styles.pagintationInput}
           />
         </View>
       </View>
     );
     const page2 = (
       <View style={styles.page}>
-        <Text
-          style={{
-            paddingHorizontal: 20,
-            fontSize: 18,
-            marginBottom: 10,
-            fontWeight: "bold"
-          }}
-        >
-          Create a #CastId
-        </Text>
+        <Text style={styles.paginationHeader}>Create a #CastId</Text>
         {!this.state.inputFocused && (
-          <Text
-            style={{
-              paddingHorizontal: 20,
-              textAlign: "center",
-              fontSize: 14,
-              marginBottom: 20
-            }}
-          >
+          <Text style={styles.pagintationInfo}>
             Your CastId will be used to find your wedding.
           </Text>
         )}
@@ -341,20 +358,12 @@ export default class App extends Component {
             ref={component => (this.castIdInput = component)}
             value={this.state.castId}
             autoCapitalize="none"
-            containerStyle={{
-              backgroundColor: "#f4f4f4",
-              margin: 0,
-              flex: 1,
-              alignSelf: "center",
-              borderRadius: 0,
-              borderTopLeftRadius: 5,
-              borderBottomLeftRadius: 5
-            }}
+            containerStyle={styles.pagintationInputContainer}
             maxLength={15}
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             inputContainerStyle={{ borderBottomWidth: 0 }}
-            inputStyle={{ fontSize: 20, height: 50 }}
+            inputStyle={styles.pagintationInput}
           />
         </View>
         {!this.state.inputFocused && (
@@ -367,25 +376,9 @@ export default class App extends Component {
     );
     const passwordPage = (
       <View style={styles.page}>
-        <Text
-          style={{
-            paddingHorizontal: 20,
-            fontSize: 18,
-            marginBottom: 10,
-            fontWeight: "bold"
-          }}
-        >
-          Create a password
-        </Text>
+        <Text style={styles.paginationHeader}>Create a password</Text>
         {!this.state.inputFocused && (
-          <Text
-            style={{
-              paddingHorizontal: 20,
-              textAlign: "center",
-              fontSize: 14,
-              marginBottom: 20
-            }}
-          >
+          <Text style={styles.pagintationInfo}>
             This password will secure your WedCast
           </Text>
         )}
@@ -399,117 +392,60 @@ export default class App extends Component {
             }}
             value={this.state.password}
             autoCapitalize="none"
-            containerStyle={{
-              backgroundColor: "#f4f4f4",
-              margin: 0,
-              flex: 1,
-              alignSelf: "center",
-              borderRadius: 0,
-              borderTopLeftRadius: 5,
-              borderBottomLeftRadius: 5
-            }}
+            containerStyle={styles.pagintationInputContainer}
             maxLength={15}
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             inputContainerStyle={{ borderBottomWidth: 0 }}
             ref={component => (this.passwordInput = component)}
-            inputStyle={{ fontSize: 20, height: 50 }}
+            inputStyle={styles.pagintationInput}
           />
         </View>
       </View>
     );
     const page3 = (
       <View style={styles.page}>
-        <Text
-          style={{
-            paddingHorizontal: 20,
-            fontSize: 18,
-            marginBottom: 10,
-            fontWeight: "bold"
-          }}
-        >
-          Add a WedCast photo
-        </Text>
+        <Text style={styles.paginationHeader}>Add a WedCast photo</Text>
         {!this.state.inputFocused && (
-          <Text
-            style={{
-              paddingHorizontal: 20,
-              textAlign: "center",
-              fontSize: 14,
-              marginBottom: 20
-            }}
-          >
+          <Text style={styles.pagintationInfo}>
             Your guests will see this photo when searching for your wedding
           </Text>
         )}
-
-        {this.state.avatarUri == null && (
-          <Avatar
-            size={this.state.smallScreen ? 150 : 250}
-            rounded
-            containerStyle={{ backgroundColor: "#87E5D3" }}
-            imageProps={{ resizeMode: "cover" }}
-            source={require("./assets/placeholder.png")}
-            onPress={() => {
-              Orientation.unlockAllOrientations();
-
-              this.props.navigation.navigate("UpdateAvatar", {
-                returnData: this.returnData.bind(this)
-              });
-            }}
-            activeOpacity={0.7}
-          />
-        )}
-        {this.state.avatarUri != null && (
-          <Avatar
-            size={this.state.smallScreen ? 150 : 250}
-            rounded
-            containerStyle={{ backgroundColor: "#87E5D3" }}
-            imageProps={{ resizeMode: "cover" }}
-            source={{ uri: this.state.avatarUri }}
-            onPress={() => {
-              Orientation.unlockAllOrientations();
-              this.props.navigation.navigate("UpdateAvatar", {
-                returnData: this.returnData.bind(this)
-              });
-            }}
-            activeOpacity={0.7}
-          />
-        )}
+        <Avatar
+          size={this.state.smallScreen ? 150 : 250}
+          rounded
+          containerStyle={{ backgroundColor: "#87E5D3" }}
+          imageProps={{ resizeMode: "cover" }}
+          source={
+            this.state.avatarUri == null
+              ? require("./assets/placeholder.png")
+              : { uri: this.state.avatarUri }
+          }
+          onPress={() => {
+            Orientation.unlockAllOrientations();
+            this.props.navigation.navigate("UpdateAvatar", {
+              returnData: this.returnData.bind(this)
+            });
+          }}
+          activeOpacity={0.7}
+        />
       </View>
     );
     const phonePage = (
       <View style={{ flex: 1 }}>
         {!this.state.phoneSubmitted && (
           <View style={styles.page}>
-            <Text
-              style={{
-                paddingHorizontal: 20,
-                fontSize: 18,
-                marginBottom: 10,
-                fontWeight: "bold"
-              }}
-            >
-              Create recovery account
-            </Text>
+            <Text style={styles.paginationHeader}>Create recovery account</Text>
             {!this.state.inputFocused && (
-              <Text
-                style={{
-                  paddingHorizontal: 20,
-                  textAlign: "center",
-                  fontSize: 14,
-                  marginBottom: 20
-                }}
-              >
+              <Text style={styles.pagintationInfo}>
                 We'll use your phone number to create a recovery account in case
                 you get logged out.
               </Text>
             )}
-                       {this.state.errorMessage && (
-                <Text style={{ color: "red", textAlign: 'center', marginVertical: 10 }}>{this.state.errorMessage}</Text>
-              )}
+            {this.state.errorMessage && (
+              <Text style={styles.errorMessage}>{this.state.errorMessage}</Text>
+            )}
             <View style={styles.buttonGroup}>
- 
               <PhoneInput
                 ref={ref => {
                   this.phone = ref;
@@ -548,25 +484,9 @@ export default class App extends Component {
         )}
         {this.state.phoneSubmitted && (
           <View style={styles.page}>
-            <Text
-              style={{
-                paddingHorizontal: 20,
-                fontSize: 18,
-                marginBottom: 10,
-                fontWeight: "bold"
-              }}
-            >
-              Verification sent
-            </Text>
+            <Text style={styles.paginationHeader}>Verification sent</Text>
             {!this.state.inputFocused && (
-              <Text
-                style={{
-                  paddingHorizontal: 20,
-                  textAlign: "center",
-                  fontSize: 14,
-                  marginBottom: 20
-                }}
-              >
+              <Text style={styles.pagintationInfo}>
                 Please enter the code you recieved to verify your phone number.
               </Text>
             )}
@@ -584,85 +504,19 @@ export default class App extends Component {
                 }}
                 maxLength={20}
                 autoCapitalize="none"
-                containerStyle={{
-                  backgroundColor: "#f4f4f4",
-                  margin: 0,
-                  flex: 1,
-                  alignSelf: "center",
-                  borderRadius: 0,
-                  borderTopLeftRadius: 5,
-                  borderBottomLeftRadius: 5
-                }}
+                containerStyle={styles.pagintationInputContainer}
                 ref={component => (this.verificationInput = component)}
                 onFocus={() => this.setState({ inputFocused: true })}
                 onBlur={() => this.setState({ inputFocused: false })}
                 inputContainerStyle={{ borderBottomWidth: 0 }}
-                inputStyle={{ fontSize: 20, height: 50 }}
-              />
+                inputStyle={styles.pagintationInput}
+                />
             </View>
           </View>
         )}
       </View>
     );
 
-    const page4 = (
-      <View style={styles.page}>
-        <TouchableOpacity
-          style={styles.pricingCard}
-          onPress={() => this.setState({ castType: 0 })}
-        >
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: "#1F9FAC" }}>
-            Small Wedding
-          </Text>
-          <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 5 }}>
-            FREE
-          </Text>
-          <Text style={{ fontSize: 14, color: "#999999", marginTop: 10 }}>
-            Up to 50 guests
-          </Text>
-          <Text style={{ fontSize: 14, color: "#999999", marginTop: 5 }}>
-            Photos stored for 1 year
-          </Text>
-
-          <CheckBox
-            center
-            checkedIcon="circle"
-            uncheckedIcon="circle-o"
-            checkedColor={"#1F9FAC"}
-            checked={this.state.castType === 0}
-            onPress={() => this.setState({ castType: 0 })}
-            containerStyle={{ padding: 0, marginTop: 10 }}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.pricingCard}
-          onPress={() => this.setState({ castType: 1 })}
-        >
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: "#1F9FAC" }}>
-            Large Wedding
-          </Text>
-          <Text style={{ fontSize: 20, fontWeight: "bold", marginTop: 5 }}>
-            $19
-          </Text>
-          <Text style={{ fontSize: 14, color: "#999999", marginTop: 10 }}>
-            Unlimited guests
-          </Text>
-          <Text style={{ fontSize: 14, color: "#999999", marginTop: 5 }}>
-            Photos stored forever
-          </Text>
-
-          <CheckBox
-            center
-            checkedIcon="circle"
-            uncheckedIcon="circle-o"
-            checkedColor={"#1F9FAC"}
-            checked={this.state.castType === 1}
-            containerStyle={{ padding: 0, marginTop: 10 }}
-            onPress={() => this.setState({ castType: 1 })}
-          />
-        </TouchableOpacity>
-      </View>
-    );
     let pages = [page1, page2, passwordPage, page3, phonePage];
     let self = this;
     return (
@@ -823,10 +677,11 @@ export default class App extends Component {
           if (snapshotRef && snapshotRef.val()) {
             alert(`Sorry, #${castId} is taken. Please try a different #CastID`);
           } else {
-            self.viewPager.setPage([self.state.currentPage + 1]);
+            let nextPage = self.state.currentPage + 1;
+            self.viewPager.setPage(nextPage);
 
             self.setState({
-              currentPage: (self.state.currentPage += 1)
+              currentPage: nextPage
             });
           }
         })
@@ -839,14 +694,18 @@ export default class App extends Component {
     } else if (this.state.currentPage == 2) {
       //Keyboard.dismiss();
       //this.passwordInput.blur();
-      this.viewPager.setPage([this.state.currentPage + 1]);
+      let nextPage = self.state.currentPage + 1;
+
+      this.viewPager.setPage(nextPage);
       this.setState({
-        currentPage: (this.state.currentPage += 1)
+        currentPage: nextPage
       });
     } else {
-      this.viewPager.setPage([this.state.currentPage + 1]);
+      let nextPage = self.state.currentPage + 1;
+
+      this.viewPager.setPage(nextPage);
       this.setState({
-        currentPage: (this.state.currentPage += 1)
+        currentPage: nextPage
       });
     }
   };
@@ -943,18 +802,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff"
   },
-  pricingCard: {
-    paddingVertical: 15,
-    paddingHorizontal: 35,
-
-    borderRadius: 8,
-    borderColor: "#dedede",
-    borderWidth: 1,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginVertical: 10
-  },
   cancel: {
     padding: 10,
     marginBottom: 5,
@@ -991,5 +838,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center"
+  },
+
+  paginationHeader: {
+    paddingHorizontal: 20,
+    fontSize: 18,
+    marginBottom: 10,
+    fontWeight: "bold"
+  },
+  pagintationInputContainer: {
+    backgroundColor: "#f4f4f4",
+    margin: 0,
+    flex: 1,
+    alignSelf: "center",
+    borderRadius: 0,
+    borderTopLeftRadius: 5,
+    borderBottomLeftRadius: 5
+  },
+  pagintationInput: { fontSize: 20, height: 50 },
+  pagintationInfo: {
+    paddingHorizontal: 20,
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 20
+  },
+  errorMessage: {
+    color: "red",
+    textAlign: "center",
+    marginVertical: 10
   }
 });

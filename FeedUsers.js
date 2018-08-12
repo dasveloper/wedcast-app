@@ -130,7 +130,7 @@ export default class FeedUsers extends Component {
               { title: "Offline", data: offlineUsers || [] }
             ]}
             keyExtractor={(item, index) => item + index}
-          />}
+          />
         </View>
         {bottomMenu}
       </SafeAreaView>

@@ -1,3 +1,9 @@
+
+
+
+
+
+
 /**
  * Sample React Native App
  * https://github.com/facebook/react-native
@@ -5,6 +11,7 @@
  */
 import Orientation from "react-native-orientation-locker";
 import Permissions from 'react-native-permissions'
+import Spinner from 'react-native-loading-spinner-overlay';
 
 import React, { Component } from "react";
 import {
@@ -14,34 +21,34 @@ import {
   View,
   TouchableOpacity,
   Image,
-  Dimensions,
-  Alert,
   CameraRoll,
-  AppState,
+  Dimensions,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  Alert,
+  AppState
 } from "react-native";
 import { Icon, Button } from "react-native-elements";
-
-import RNFetchBlob from "react-native-fetch-blob";
 
 import Camera from "react-native-camera";
 import uuid from "uuid";
 import firebase from "react-native-firebase";
 
-export default class Main extends Component {
+
+export default class UpdateAvatar extends Component {
   state = {
     currentUser: null,
     flashOn: null,
     cameraModeBack: null,
     imagePreview: null,
     imageTaken: null,
+    savingPhoto: false,
     windowWidth: null,
     windowHeight: null,
-    AppState: null,
     downloading: null,
     cameraPermission: null,
-    downloadPermission: null
+    downloadPermission: null,
+    castId: null
   };
 
   constructor(props) {
@@ -51,138 +58,94 @@ export default class Main extends Component {
     const dimensions = Dimensions.get("window");
     this.state = {
       flashOn: false,
-      imageTaken: false,
       downloading: false,
-      savingPhoto: false,
-      cameraModeBack: true,
+      imageTaken: false,
+      cameraModeBack: false,
       currentUser: currentUser,
       windowWidth: dimensions.width,
       windowHeight: dimensions.height,
       appState: AppState.currentState
+
     };
   }
-  _handleAppStateChange = nextAppState => {
-    if (
-      this.state.appState.match(/active/) &&
-      nextAppState.match(/inactive|background/)
-    ) {
-      console.log("App has come to the background!");
-      let user = this.state.currentUser.uid;
-      if (this.props.navigation.getParam("castId")) {
-        castId = this.props.navigation.getParam("castId", null);
-
-        firebase
-          .database()
-          .ref(`feeds/feedNew/${castId}/members/${user}/online`)
-          .set(false, function(error) {});
-      }
-    } else if (
-      this.state.appState.match(/inactive|background/) &&
-      nextAppState.match(/active/)
-    ) {
-      console.log("App has come to the foreground!");
-      let user = this.state.currentUser.uid;
-      if (this.props.navigation.getParam("castId")) {
-        castId = this.props.navigation.getParam("castId", null);
-
-        firebase
-          .database()
-          .ref(`feeds/feedNew/${castId}/members/${user}/online`)
-          .set(true, function(error) {});
-      }
-    }
-    this.setState({ appState: nextAppState });
-  };
-  componentWillUnmount() {
-    AppState.removeEventListener("change", this._handleAppStateChange);
-
-    let user = this.state.currentUser.uid;
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-
-      firebase
-        .database()
-        .ref(`feeds/feedNew/${castId}/members/${user}/online`)
-        .set(false, function(error) {});
-    }
-  }
-  _onOrientationDidChange = orientation => {
-    if (orientation === "LANDSCAPE") {
-      // do something with landscape layout
-    } else {
-      // do something with portrait layout
-    }
-  };
-
-  componentDidMount() {
-    AppState.addEventListener("change", this._handleAppStateChange);
-    Orientation.unlockAllOrientations();
-    Orientation.addOrientationListener(this._onOrientationDidChange);
-      Permissions.check('camera').then(response => {
-        // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
-        this.setState({ cameraPermission: response })
-        if (response == 'undetermined'){
-          this.alertForPhotosPermission();
-
-        }
-
-      })
-    let user = this.state.currentUser.uid;
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-
-      firebase
-        .database()
-        .ref(`feeds/feedNew/${castId}/members/${user}/online`)
-        .set(true, function(error) {});
-    }
-  }
+  _onOrientationDidChange = orientation => {  };
   saveToCameraRoll = async image => {
     const { imagePreview } = this.state;
     let self = this;
     if (Platform.OS === "android") {
-      RNFetchBlob.config({
+      await RNFetchBlob.config({
         fileCache: true,
         appendExt: "jpg"
       })
-        .fetch("GET", imagePreview)
+        .fetch('GET', image.uri)
         .then(res => {
-          CameraRoll.saveToCameraRoll(res.path())
-            .then(Alert.alert("Success", "Photo added to camera roll!"))
-            .catch(err => console.log("err:", err));
+           CameraRoll.saveToCameraRoll(res.path())
+          
         });
     } else {
-      await CameraRoll.saveToCameraRoll(imagePreview).then(() => {});
+      await CameraRoll.saveToCameraRoll(imagePreview);
     }
   };
+  goToFeed(){
+    Orientation.lockToPortrait();
+    this.props.navigation.navigate("Feed", {
+      castId: this.state.castId,
+    });
+
+  }
+  goToFeedUsers(){
+    Orientation.lockToPortrait();
+    this.props.navigation.navigate("FeedUsers", {
+      castId: this.state.castId,
+    });
+
+  }
+
+
+  componentWillUnmount() {
+    AppState.removeEventListener('change', this._handleAppStateChange);
+  }
+
+  _handleAppStateChange = (nextAppState) => {
+    if (this.state.appState.match(/inactive|background/) && nextAppState.match(/active/)) {
+      console.log('App has come to the foreground!')
+    }
+    else  if (this.state.appState.match(/active/) && nextAppState.match(/inactive|background/)) {
+    
+    }
+    this.setState({appState: nextAppState});
+  }
+
+  componentDidMount() {
+    AppState.addEventListener('change', this._handleAppStateChange);
+
+    Orientation.unlockAllOrientations();
+    Orientation.addOrientationListener(this._onOrientationDidChange);
+    Permissions.check('camera').then(response => {
+      // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+      this.setState({ cameraPermission: response })
+    })
+    if (this.props.navigation.getParam("castId")) {
+      let castId = this.props.navigation.getParam("castId", null);
+      this.setState({castId: castId})
+    }
+  }
   render() {
     const {
       currentUser,
       imagePreview,
-      imageTaken,
-      cameraModeBack,
       flashOn,
+      cameraModeBack,
+      imageTaken,
       windowHeight,
       windowWidth
     } = this.state;
-    let castId;
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-    }
-    let feedName;
-    if (this.props.navigation.getParam("castId")) {
-      feedName = this.props.navigation.getParam("feedName", null);
-    }
+
     let imagePreviewPlaceholder = imageTaken ? (
       <Image
         source={{ uri: imagePreview }}
         style={{
-          flex: 1,
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom:0
+          flex: 1
         }}
       />
     ) : (
@@ -191,6 +154,7 @@ export default class Main extends Component {
           this.camera = cam;
         }}
         style={styles.cam}
+        captureTarget={Camera.constants.CaptureTarget.disk}
         type={
           cameraModeBack
             ? Camera.constants.Type.back
@@ -206,64 +170,51 @@ export default class Main extends Component {
       />
     );
     let bottomMenu = imageTaken ? (
-      <View style={styles.bottomMenu}>
-        <Icon
+      <SafeAreaView style={styles.bottomMenuWrapper}>
+      <View style={styles.bottomMenu}></View>
+             <Icon
           type="ionicon"
+          underlayColor="transparent"
           name="ios-people"
-          color="white"
+          color="#fff"
           iconStyle={styles.navIcon}
           size={40}
           onPress={() => this.goToFeedUsers()}
         />
-        <Button
-          loading={this.state.savingPhoto}
-          disabled={this.state.savingPhoto}
-          disabledStyle={{ backgroundColor: "transparent" }}
-          loadingProps={{ size: "large", color: "rgba(255, 255, 255, 1)" }}
-          buttonStyle={{ backgroundColor: "transparent" }}
-          containerStyle={{
-            backgroundColor: "#96c256",
-            width: 80,
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: 80,
-            height: 80
-          }}
-          title=""
-          icon={
-            <Icon
+               <Icon
               type="ionicon"
               name="md-checkmark"
-              color="transparent"
+              color="#96c256"
               iconStyle={styles.navIcon}
               size={40}
               reverse
               loading
               onPress={this.uploadImageAsync.bind(this)}
             />
-          }
-        />
-        <Icon
+      
+                <Icon
           type="ionicon"
+          underlayColor="transparent"
           name="ios-images"
-          color="white"
+          color="#fff"
+          iconStyle={styles.navIcon}
           size={40}
           onPress={() => this.goToFeed()}
-          iconStyle={styles.navIcon}
         />
-      </View>
+      </SafeAreaView>
+
     ) : (
-      <View style={styles.bottomMenu}>
-        <Icon
+      <SafeAreaView style={styles.bottomMenuWrapper}>
+      <View style={styles.bottomMenu}></View>
+       <Icon
           type="ionicon"
-          name="ios-people"
-          color="white"
           underlayColor="transparent"
+          name="ios-people"
+          color="#fff"
           iconStyle={styles.navIcon}
           size={40}
           onPress={() => this.goToFeedUsers()}
         />
-
         <Icon
           type="ionicon"
           name="md-camera"
@@ -272,25 +223,23 @@ export default class Main extends Component {
           size={40}
           reverse
           onPress={() => this.state.cameraPermission === "authorized" ? this.takePicture() : 
-          this.alertForPhotosPermission()
-
-        }
-        />
-
-        <Icon
+          this.alertForPhotosPermission()}
+           /> 
+           <Icon
           type="ionicon"
-          name="ios-images"
-          color="white"
           underlayColor="transparent"
+          name="ios-images"
+          color="#fff"
+          iconStyle={styles.navIcon}
           size={40}
           onPress={() => this.goToFeed()}
-          iconStyle={styles.navIcon}
         />
-      </View>
+      </SafeAreaView>
     );
+    
 
     let topMenu = imageTaken ? (
-      <View style={styles.topMenu}>
+      <SafeAreaView style={styles.topMenu}>
         <Icon
           type="ionicon"
           name="md-close"
@@ -330,22 +279,22 @@ export default class Main extends Component {
             }}
           />
         )}
-      </View>
+      </SafeAreaView>
     ) : (
-      <View style={styles.topMenu}>
+      <SafeAreaView style={styles.topMenu}>
         <View style={styles.feedMenu}>
           <Icon
             type="ionicon"
-            name="ios-menu-outline"
-            color="white"
-            iconStyle={styles.menuIcon}
-            underlayColor="transparent"
-            size={36}
-            onPress={() => this.goToWeddingDetails()}
+            name="ios-arrow-round-back"
+            color="#fff"
+            size={40}
+            onPress={() => {
+              Orientation.lockToPortrait();
+
+              this.props.navigation.goBack();
+            }}
+            iconStyle={styles.navIcon}
           />
-          <Text numberOfLines={1} style={styles.feedName}>
-            {feedName}
-          </Text>
         </View>
         <View style={styles.cameraControls}>
           <Icon
@@ -373,25 +322,24 @@ export default class Main extends Component {
             }
           />
         </View>
-      </View>
+      </SafeAreaView>
     );
 
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+              <Spinner visible={this.state.savingPhoto} textContent={"Saving..."} textStyle={{color: '#FFF'}} />
+
         {topMenu}
+
         {imagePreviewPlaceholder}
         {bottomMenu}
-      </SafeAreaView>
+      </View>
     );
   }
   async uploadImageAsync() {
-    const { currentUser, imagePreview } = this.state;
-    let castId;
+    const { currentUser, imagePreview, windowWidth, windowHeight} = this.state;
     this.setState({ savingPhoto: true });
 
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-    }
     const ref = firebase
       .storage()
       .ref()
@@ -418,40 +366,69 @@ export default class Main extends Component {
         // Handle successful uploads on complete
         // For instance, get the download URL: https://firebasestorage.googleapis.com/...
         snapshot.ref.getDownloadURL().then(function(downloadURL) {
-          Image.getSize(
-            downloadURL,
-            (Width, Height) => {
+          let comment = { uri: downloadURL, height: windowHeight, width: windowWidth, user: currentUser };
 
-              //self.saveToCameraRoll(downloadURL);
-              let comment = { user: currentUser, uri: downloadURL, width: Width, height: Height };
-              firebase
-                .database()
-                .ref("feeds/feedNew")
-                .child(castId)
-                .child("uploads")
-                .push(comment, function(error) {
-                  if (error) {
-                  } //alert("Error has occured during saving process");
-                  else {
-                    self.setState({
-                      imagePreview: null,
-                      imageTaken: false,
-                      savingPhoto: false
-                    });
-                  }
-                  Orientation.unlockAllOrientations();
-                });
-            },
-            errorMsg => {
-              console.log(errorMsg);
-            }
-          );
+           firebase.database().ref(`feeds/feedNew/${self.state.castId}/uploads`).push(comment, function(error) {
+            if (error)
+            alert(error)
+             //console.log('Error has occured during saving process')
+           else
+            self.setState({ imagePreview: null, imageTaken: false })
+            })
+            self.setState({
+              savingPhoto: false
+            });
         });
       }
     );
     return true;
   }
-
+  requestPermission = () => {
+    Permissions.request('camera').then(response => {
+      // Returns once the user has chosen to 'allow' or to 'not allow' access
+      // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+      this.setState({ cameraPermission: response })
+    })
+  }
+  requestDownloadPermission = () => {
+    Permissions.request('photo').then(response => {
+      // Returns once the user has chosen to 'allow' or to 'not allow' access
+      // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+      this.setState({ cameraPermission: response })
+    })
+  }
+  alertForPhotosPermission() {
+    Alert.alert(
+      'Can we access your photos?',
+      'We need access so you can set your profile pic',
+      [
+        {
+          text: 'No',
+          onPress: () => console.log('Permission denied'),
+          style: 'cancel',
+        },
+        this.state.cameraPermission == 'undetermined'
+          ? { text: 'OK', onPress: this.requestPermission }
+          : { text: 'Open Settings', onPress: Permissions.openSettings },
+      ],
+    )
+  }
+  alertForDownloadPermission() {
+    Alert.alert(
+      'Can we access your photo library?',
+      'We need access so you can download photos',
+      [
+        {
+          text: 'No',
+          onPress: () => console.log('Permission denied'),
+          style: 'cancel',
+        },
+        this.state.downloadPermission == 'undetermined'
+          ? { text: 'OK', onPress: this.requestDownloadPermission }
+          : { text: 'Open Settings', onPress: Permissions.openSettings },
+      ],
+    )
+  }
   takePicture() {
     let self = this;
     const options = {
@@ -480,97 +457,52 @@ export default class Main extends Component {
     });
     Orientation.unlockAllOrientations();
   }
-  goToFeed = () => {
-    Orientation.lockToPortrait();
-
-    let castId;
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-    }
-    this.props.navigation.navigate("Feed", { castId: castId });
-  };
-  goToFeedUsers = () => {
-    Orientation.lockToPortrait();
-    let castId;
-    if (this.props.navigation.getParam("castId")) {
-      castId = this.props.navigation.getParam("castId", null);
-    }
-    this.props.navigation.navigate("FeedUsers", { castId: castId });
-  };
-  goToWeddingDetails = () => {
-    Orientation.lockToPortrait();
-
-    this.props.navigation.navigate("WeddingDetails");
-  };
-  requestPermission = () => {
-    Permissions.request('camera').then(response => {
-      // Returns once the user has chosen to 'allow' or to 'not allow' access
-      // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
-      this.setState({ cameraPermission: response })
-    })
-  }
-
-  alertForPhotosPermission() {
-    Alert.alert(
-      'Can we access your photos?',
-      'We need access so you can set your profile pic',
-      [
-        {
-          text: 'No',
-          onPress: () => console.log('Permission denied'),
-          style: 'cancel',
-        },
-        this.state.cameraPermission == 'undetermined'
-          ? { text: 'OK', onPress: this.requestPermission }
-          : { text: 'Open Settings', onPress: Permissions.openSettings },
-      ],
-    )
-  }
-
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection:'column',
-    backgroundColor: "#000",
-    justifyContent:'space-between'
+    backgroundColor: "#F5FCFF"
   },
   welcome: {
     fontSize: 20,
     textAlign: "center",
     margin: 10
   },
+
   cam: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: "column"
+  },
+  bottomMenuWrapper: {
+    flex: 0,
+    paddingHorizontal: 5,
+    transform: [{translateY: 20}],
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
     position: "absolute",
-    top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
-    bottom:0
+    zIndex: 99,
+    flexDirection: "row",
   },
   bottomMenu: {
     flex: 0,
-    padding: 0,
-    maxHeight: 50,
+    padding: 5,
+    height: '100%',
     backgroundColor: "rgba(0,0,0,.4)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    position: "absolute",
+    transform: [{translateY: 20}],
 
-    zIndex: 99,
-    flexDirection: "row"
-  },
-  menuIcon: {
-    marginRight: 15
-  },
-  feedName: {
-    fontSize: 20,
-    lineHeight: 20,
-    color: "#fff",
-    width: 200,
-    fontFamily: "Quicksand"
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
   },
   topMenu: {
     flex: 0,
@@ -578,30 +510,13 @@ const styles = StyleSheet.create({
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     zIndex: 99,
-    flexDirection: "row",
-    maxWidth: "100%"
+    flexDirection: "row"
   },
-  feedMenu: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-    flex: 2
-  },
-  cameraControls: {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    overflow: "hidden",
-    flex: 1
-  },
-  flashIcon: {
-    marginRight: 15
-  },
-  switchCameraIcon: {},
   captureButton: {
     width: 60,
     height: 60,
@@ -611,7 +526,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff"
   },
-  navIcon: {
+  cameraControls: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    overflow: "hidden",
+    flex: 1,
     marginHorizontal: 10
+  },
+  flashIcon: {
+    marginRight: 15
+  },
+  topNavIcon: {
+    marginHorizontal: 10
+  },
+  navIcon: {
+    marginHorizontal: 20
   }
 });

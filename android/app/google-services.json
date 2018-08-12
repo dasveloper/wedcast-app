@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "408124275529",
+    "firebase_url": "https://snaps-b05fb.firebaseio.com",
+    "project_id": "snaps-b05fb",
+    "storage_bucket": "snaps-b05fb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:408124275529:android:6a885b86661458cf",
+        "android_client_info": {
+          "package_name": "com.wedcast"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "408124275529-hr1s6k53iklc1dle3r9do4o4sucpuao5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7H0IhpDgXpmbECwcWAciNAhZ8upZpMRs"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

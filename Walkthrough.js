@@ -1,170 +1,78 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- * @flow
- */
-
 import React, { Component } from "react";
 import SplashScreen from "react-native-splash-screen";
 
 import { Button, Text } from "react-native-elements";
-import {
-  TouchableOpacity,
-  Platform,
-  Keyboard,
-  Image,
-  AppRegistry,
-  StyleSheet,
-  View,
-  KeyboardAvoidingView
-} from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import { IndicatorViewPager, PagerDotIndicator } from "rn-viewpager";
 
 export default class Walkthrough extends Component {
-  state = {
-    feedName: null,
-    castId: null,
-    password: null,
-    guests: null,
-    avatarUri: null,
-    verificationCode: null,
-    phoneNumber: null,
-    confirmResult: null,
-    imageTaken: null,
-    phoneSubmitted: false,
-    windowWidth: null,
-    windowHeight: null,
-    disableNext: true,
-    castType: 0
-  };
-
   constructor() {
     super();
 
     this.state = {
-      currentPage: 0,
-      currentUser: null,
-      password: null,
-      feedName: null,
-      castType: 0,
-      disableNext: true
+      currentPage: 0
     };
   }
   componentDidMount() {
     SplashScreen.hide();
   }
   render() {
-    const page1 = (
+    const phonePage = (
       <View style={{ flex: 1 }}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={styles.walkthoughPage}>
           <Image
             source={require("./assets/walkthrough-phone.png")}
-            style={{
-              width: "80%",
-              resizeMode: "contain",
-              backgroundColor: "transparent"
-            }}
+            style={styles.walkthoughImage}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "Quicksand",
-            padding: 30,
-            fontSize: 18,
-            textAlign: "center",
-            marginBottom: 30
-          }}
-        >
+        <Text style={styles.walkthroughText}>
           Let your your guests become the photographers, straight from their
           smart phones.
         </Text>
       </View>
     );
+
     const photoPage = (
       <View style={{ flex: 1 }}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={styles.walkthoughPage}>
           <Image
             source={require("./assets/walkthrough-photos.png")}
-            style={{
-              width: "80%",
-              resizeMode: "contain",
-              backgroundColor: "transparent"
-            }}
+            style={styles.walkthoughImage}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "Quicksand",
-            padding: 30,
-            fontSize: 18,
-            textAlign: "center",
-            marginBottom: 30
-          }}
-        >
+        <Text style={styles.walkthroughText}>
           Download photos straight to your phone.
         </Text>
       </View>
     );
-    const page3 = (
+    const projectorPage = (
       <View style={{ flex: 1 }}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={styles.walkthoughPage}>
           <Image
             source={require("./assets/walkthrough-projector.png")}
-            style={{
-              width: "80%",
-              resizeMode: "contain",
-              backgroundColor: "transparent"
-            }}
+            style={styles.walkthoughImage}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "Quicksand",
-            padding: 30,
-            fontSize: 18,
-            textAlign: "center",
-            marginBottom: 30
-          }}
-        >
+        <Text style={styles.walkthroughText}>
           Live stream your photos straight to a projector via your CastUrl
         </Text>
       </View>
     );
-    const page2 = (
+    const laptopPage = (
       <View style={{ flex: 1 }}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
+        <View style={styles.walkthoughPage}>
           <Image
             source={require("./assets/walkthrough-laptop.png")}
-            style={{
-              width: "80%",
-              resizeMode: "contain",
-              backgroundColor: "transparent"
-            }}
+            style={styles.walkthoughImage}
           />
         </View>
-        <Text
-          style={{
-            fontFamily: "Quicksand",
-            padding: 30,
-            fontSize: 18,
-            textAlign: "center",
-            marginBottom: 30
-          }}
-        >
+        <Text style={styles.walkthroughText}>
           Distant guests can't make it? They can watch live from the comfort of
           their home.
         </Text>
       </View>
     );
-    let pages = [page1, photoPage, page2, page3];
+    let pages = [phonePage, photoPage, projectorPage, laptopPage];
 
     return (
       <View style={styles.container}>
@@ -172,7 +80,7 @@ export default class Walkthrough extends Component {
           style={{ flex: 1 }}
           indicator={this._renderDotIndicator()}
         >
-          {pages.map(page => this.renderViewPagerPage(page))}
+          {pages.map((page, index)=> this.renderViewPagerPage(page, index))}
         </IndicatorViewPager>
 
         <View style={styles.pagerNavigation}>
@@ -181,15 +89,15 @@ export default class Walkthrough extends Component {
             clear={true}
             onPress={() => this.props.navigation.navigate("LoginName")}
             titleStyle={styles.skipTitle}
-            title="Skip"
+            title="Get started!"
           />
         </View>
       </View>
     );
   }
 
-  renderViewPagerPage = data => {
-    return <View>{data}</View>;
+  renderViewPagerPage = (page, index) => {
+    return <View key={index}>{page}</View>;
   };
   goToNextPage = () => {
     this.viewPager.setPage([this.state.currentPage + 1]);
@@ -271,7 +179,23 @@ const styles = StyleSheet.create({
   skipTitle: {
     color: "#1F9FAC",
     fontSize: 22,
+    fontFamily: "Quicksand"
+  },
+  walkthroughText: {
     fontFamily: "Quicksand",
-
+    padding: 30,
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 30
+  },
+  walkthoughImage: {
+    width: "80%",
+    resizeMode: "contain",
+    backgroundColor: "transparent"
+  },
+  walkthoughPage: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center"
   }
 });

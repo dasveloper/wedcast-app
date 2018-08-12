@@ -16,6 +16,7 @@ import {
   Icon,
   Avatar
 } from "react-native-elements";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 
 export default class PrivateFeed extends React.Component {
@@ -142,29 +143,26 @@ export default class PrivateFeed extends React.Component {
               {errorMessage}
             </Text>
           )}
-
-          <TextInput
+       
+ 
+          <Input
             placeholderTextColor="#605D5D"
             autoCapitalize="none"
             placeholder="Password"
+            autoCorrect={false}
+            underlineColorAndroid="transparent"
+            InputProps={{ disableUnderline: true }}
+
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             blurOnSubmit={false}
             value={password}
             onChangeText={password => this.setState({ password })}
-            style={{
-              backgroundColor: "#f4f4f4",
-              borderRadius: 5,
-              padding: 10,
-              alignSelf: "center",
-              marginBottom: 20,
-              fontFamily: "Quicksand",
-              borderBottomWidth: 0,
-              width: "90%",
-              fontSize: 24,
-              height: 60
-            }}
+            containerStyle={styles.searchInputContainer}
+            inputContainerStyle={{ borderBottomWidth: 0 }}
+            inputStyle={styles.searchInput}
           />
+
 
           <Button
             style={styles.loginButton}
@@ -185,7 +183,7 @@ export default class PrivateFeed extends React.Component {
     );
   }
 }
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "space-evenly",
@@ -235,5 +233,28 @@ const styles = StyleSheet.create({
     color: "#000",
     fontFamily: "Quicksand",
     textAlign: "center"
+  },
+  searchInputContainer: {
+    backgroundColor: "#f4f4f4",
+    margin: 0,
+    alignSelf: "center",
+    borderTopLeftRadius: 5,
+    padding: "10rem",
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 5,
+    alignSelf: "center",
+    marginBottom: 20,
+    borderBottomWidth: 0,
+    width: "90%",
+    fontSize: 24,
+  },
+  searchInput: {
+    fontSize: 25,
+    fontFamily: "Quicksand",
+    padding: 0,
+        borderBottomWidth: 0,
+
   },
 });

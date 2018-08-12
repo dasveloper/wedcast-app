@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -19,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.21</string>
+	<string>1.0.25</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -34,7 +32,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string> 1.0.21</string>
+	<string> 1.0.25</string>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
 	<key>LSRequiresIPhoneOS</key>
@@ -50,22 +48,24 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Wedcast needs access to your camera so you can take pictures for your event.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Wedcast needs access to your photo library so we can save the picture you&apos;re trying to download.</string>
+	<string>Wedcast needs access to your photo library so we can save the picture you're trying to download.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Wedcast needs access to your photo library so you can upload images.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Quicksand-Medium.ttf</string>
@@ -107,6 +107,6 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>kTCCServiceMediaLibrary</key>
-	<string>Wedcast doesn&apos;t use this permission, if you see this it&apos;s an error.</string>
+	<string>Wedcast doesn't use this permission, if you see this it's an error.</string>
 </dict>
 </plist>

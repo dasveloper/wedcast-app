@@ -5,8 +5,6 @@ import {
   StyleSheet,
   View,
   ImageBackground,
-  Image,
-  KeyboardAvoidingView,
   Dimensions,
   SafeAreaView
 } from "react-native";
@@ -15,7 +13,6 @@ import {
   Input,
   Button,
   Text,
-  ListItem,
   Icon,
   Avatar
 } from "react-native-elements";
@@ -24,7 +21,6 @@ export default class LoginAvatar extends React.Component {
   state = {
     userName: "",
     avatarUri: null,
-    errorMessage: null,
     currentUser: null,
     smallScreen: false
   };
@@ -109,19 +105,7 @@ export default class LoginAvatar extends React.Component {
   returnData(avatarUri) {
     this.setState({ avatarUri: avatarUri });
   }
-  saveLoginDetails = () => {
-    let newUser = {
-      profile: { name: this.state.userName, avatar: this.state.avatarUri }
-    };
-    let self = this;
 
-    firebase
-      .database()
-      .ref("users")
-      .push(newUser, function(error) {
-        if (error) console.log("Error has occured during saving process");
-      });
-  };
   componentDidMount = () => {
     const { currentUser } = firebase.auth();
     if (Dimensions.get("window").width <= 320) {
@@ -135,10 +119,9 @@ export default class LoginAvatar extends React.Component {
   };
 
   render() {
-    const { inputFocused, name } = this.state;
+    const { inputFocused } = this.state;
 
     return (
-      <KeyboardAvoidingView style={styles.kb} behavior="padding" enabled>
         <ImageBackground
           resizeMode={"cover"} // or cover
           style={styles.backgroundStyle} // must be passed from the parent, the number may vary depending upon your screen size
@@ -237,7 +220,6 @@ export default class LoginAvatar extends React.Component {
             </View>
           </SafeAreaView>
         </ImageBackground>
-      </KeyboardAvoidingView>
     );
   }
 }
@@ -254,9 +236,6 @@ const styles = StyleSheet.create({
     flexDirection: "column",
 
     backgroundColor: "#B5FCF1"
-  },
-  errorMessage: {
-    color: "red"
   },
   //Upper text header
   backButton: {

@@ -1,12 +1,11 @@
 import React from "react";
-import SplashScreen from "react-native-splash-screen";
+//import SplashScreen from "react-native-splash-screen";
 
 import {
   StyleSheet,
   View,
   ImageBackground,
   KeyboardAvoidingView,
-  ViewPropTypes,
   TouchableOpacity,
   TextInput,
   SafeAreaView
@@ -16,9 +15,6 @@ import {
   Input,
   Button,
   Text,
-  ListItem,
-  Icon,
-  Avatar
 } from "react-native-elements";
 
 export default class LoginName extends React.Component {
@@ -42,25 +38,8 @@ export default class LoginName extends React.Component {
       currentUser: this.state.currentUser
     });
   };
-
-  updateName = () => {
-    var self = this;
-    var user = firebase.auth().currentUser;
-
-    if (user != null) {
-      user
-        .updateProfile({ displayName: self.state.name })
-        .then(function(user) {
-          self.props.navigation.navigate("LoginAvatar");
-          //return user.updateProfile({'displayName': this.state.name, "photoUrl": this.state.avatarUri});
-        })
-        .catch(function(error) {
-        });
-    }
-  };
   componentDidMount() {
     const { currentUser } = firebase.auth();
-    SplashScreen.hide();
   }
   static getDerivedStateFromProps(nextProps, prevState) {
     if (nextProps.navigation) {
@@ -75,7 +54,7 @@ export default class LoginName extends React.Component {
       }
     } else return null;
   }
- 
+
   render() {
     const { inputFocused, name } = this.state;
 
@@ -87,103 +66,101 @@ export default class LoginName extends React.Component {
           imageStyle={{ opacity: this.state.inputFocused ? 0.4 : 1 }}
           source={require("./assets/guestbook-bg.jpg")}
         >
-               <SafeAreaView style={styles.container}>
-
-          <View
-            style={[
-              {
-                backgroundColor: this.state.inputFocused
-                  ? "rgba(255, 255, 255, 1)"
-                  : "rgba(255, 255, 255, .3)"
-              },
-              styles.buttonGroup
-            ]}
-          >
-            <Text style={styles.loginHeader}>
-              {this.state.currentUser != null
-                ? "Almost there"
-                : "Lets get started!"}
-            </Text>
-            <Text style={styles.loginSubHeader}>
-              {this.state.currentUser != null
-                ? "We just need to get a few more details"
-                : "Your name will be displayed when you host or join an event"}
-            </Text>
-            {this.state.currentUser == null && (
-              <TouchableOpacity
-                style={styles.returnUser}
-                onPress={() => this.props.navigation.navigate("LoginPhone")}
-              >
-                <Text style={styles.returnUserText}>Already a user?</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.inputWrapper}>
-            {this.state.errorMessage && (
-              <Text style={styles.errorMessage}>{this.state.errorMessage}</Text>
-            )}
-            <TextInput
-              placeholderTextColor="#605D5D"
-              autoCapitalize="none"
-              placeholder="Enter your name"
-              onFocus={() => this.setState({ inputFocused: true })}
-              onBlur={() => this.setState({ inputFocused: false })}
-              blurOnSubmit={false}
-              value={name}
-              onChangeText={name => this.setState({ name })}
+          <SafeAreaView style={styles.container}>
+            <View
               style={[
                 {
-                  fontFamily: "Quicksand",
                   backgroundColor: this.state.inputFocused
                     ? "rgba(255, 255, 255, 1)"
-                    : "rgba(255, 255, 255, 0.3)"
+                    : "rgba(255, 255, 255, .3)"
                 },
-                styles.loginInput
+                styles.buttonGroup
               ]}
-            />
-          </View>
-          <View style={styles.loginButtonWrapper}>
-            <Button
-              buttonStyle={styles.loginButton}
-              titleStyle={styles.loginButtonTitle}
-              disabledStyle={styles.loginButtonDisabled}
-              disabled={name == ""}
-              title="Done"
-              onPress={this.goToAvatar}
-            />
-          </View>
-          </SafeAreaView>
+            >
+              <Text style={styles.loginHeader}>
+                {this.state.currentUser != null
+                  ? "Almost there"
+                  : "Lets get started!"}
+              </Text>
+              <Text style={styles.loginSubHeader}>
+                {this.state.currentUser != null
+                  ? "We just need to get a few more details"
+                  : "Your name will be displayed when you host or join an event"}
+              </Text>
+              {this.state.currentUser == null && (
+                <TouchableOpacity
+                  style={styles.returnUser}
+                  onPress={() => this.props.navigation.navigate("LoginPhone")}
+                >
+                  <Text style={styles.returnUserText}>Already a user?</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
+            <View style={styles.inputWrapper}>
+              {this.state.errorMessage && (
+                <Text style={styles.errorMessage}>
+                  {this.state.errorMessage}
+                </Text>
+              )}
+              <TextInput
+                placeholderTextColor="#605D5D"
+                autoCapitalize="none"
+                placeholder="Enter your name"
+                onFocus={() => this.setState({ inputFocused: true })}
+                onBlur={() => this.setState({ inputFocused: false })}
+                blurOnSubmit={false}
+                value={name}
+                onChangeText={name => this.setState({ name })}
+                style={[
+                  {
+                    fontFamily: "Quicksand",
+                    backgroundColor: this.state.inputFocused
+                      ? "rgba(255, 255, 255, 1)"
+                      : "rgba(255, 255, 255, 0.3)"
+                  },
+                  styles.loginInput
+                ]}
+              />
+            </View>
+            <View style={styles.loginButtonWrapper}>
+              <Button
+                buttonStyle={styles.loginButton}
+                titleStyle={styles.loginButtonTitle}
+                disabledStyle={styles.loginButtonDisabled}
+                disabled={name == ""}
+                title="Done"
+                onPress={this.goToAvatar}
+              />
+            </View>
+          </SafeAreaView>
         </ImageBackground>
       </KeyboardAvoidingView>
     );
   }
 }
 const styles = StyleSheet.create({
-  kb:{
-    flex: 1,
+  kb: {
+    flex: 1
   },
   container: {
     flex: 1,
-    flexDirection: "column",
+    flexDirection: "column"
   },
   backgroundStyle: {
     flex: 1,
-    flexDirection: 'column',
+    flexDirection: "column",
     backgroundColor: "#B5FCF1"
   },
   errorMessage: {
     color: "red"
   },
-  //Upper text header
   loginHeader: {
     fontSize: 24,
     color: "#000",
     fontFamily: "Quicksand",
     textAlign: "center",
     paddingBottom: 5
-
   },
   loginSubHeader: {
     fontFamily: "Quicksand",
@@ -194,9 +171,9 @@ const styles = StyleSheet.create({
     textAlign: "center"
   },
   returnUser: {
-    marginTop: 10,
+    marginTop: 10
   },
-  returnUserText:{
+  returnUserText: {
     color: "#1D57AF",
     fontSize: 14,
     fontFamily: "Quicksand"
@@ -243,11 +220,4 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingVertical: 15
   },
-  textInput: {
-    height: 40,
-    width: "90%",
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 20
-  }
 });
