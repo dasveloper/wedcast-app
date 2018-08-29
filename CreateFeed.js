@@ -36,9 +36,6 @@ import { ViewPager } from "rn-viewpager";
 
 import StepIndicator from "react-native-step-indicator";
 
-
-
-
 const getStepIndicatorIconConfig = ({ position, stepStatus }) => {
   const iconConfig = {
     name: "feed",
@@ -65,7 +62,8 @@ export default class App extends Component {
     disableNext: true,
     castType: 0,
     inputFocused: false,
-    isAnonymous: null
+    isAnonymous: null,
+    CastKey: 1
   };
 
   constructor() {
@@ -86,9 +84,13 @@ export default class App extends Component {
   }
 
   linkPhone = () => {
+    firebase.analytics().logEvent(`create_link_phone`);
+
     let self = this;
     if (!this.phone.isValidNumber()) {
       this.setState({ errorMessage: "Invalid phone number" });
+      firebase.analytics().logEvent(`invalid_phone`);
+
       return;
     }
 
@@ -113,7 +115,6 @@ export default class App extends Component {
                 phoneSubmitted: true,
                 disableNext: true,
                 confirmResult: phoneAuthSnapshot
-
               });
 
               // on ios this is the final phone auth state event you'd receive
@@ -121,9 +122,8 @@ export default class App extends Component {
               // as demonstrated in the `signInWithPhoneNumber` example above
               break;
             case firebase.auth.PhoneAuthState.ERROR: // or 'error'
-              alert("verification error");
-              alert(phoneAuthSnapshot.error);
-              break;
+             
+              
               self.setState({
                 phoneSubmitted: false
               });
@@ -140,8 +140,11 @@ export default class App extends Component {
             case firebase.auth.PhoneAuthState.AUTO_VERIFIED: // or 'verified'
               // auto verified means the code has also been automatically confirmed as correct/received
               // phoneAuthSnapshot.code will contain the auto verified sms code - no need to ask the user for input.
-              alert("auto verified on android");
-              console.log(phoneAuthSnapshot);
+              self.setState({
+                confirmResult: phoneAuthSnapshot,
+                verificationCode: phoneAuthSnapshot.code
+              });
+              self.confirmVerification();
               // Example usage if handling here and not in optionalCompleteCb:
               // const { verificationId, code } = phoneAuthSnapshot;
               // const credential = firebase.auth.PhoneAuthProvider.credential(verificationId, code);
@@ -178,14 +181,16 @@ export default class App extends Component {
           //   and there'd be no need to ask for user input of the code - proceed to credential creating logic
           // - if ANDROID auto verify timed out then phoneAuthSnapshot.code would be null, just like ios, you'd
           //   continue with user input logic.
-       
+          firebase.analytics().logEvent(`phone_success`);
+
           console.log(phoneAuthSnapshot);
         }
       );
   };
   confirmVerification = () => {
-    const { verificationCode, confirmResult } = this.state;
+    let { verificationCode, confirmResult } = this.state;
     const { verificationId, code } = confirmResult;
+
     let self = this;
     if (confirmResult && verificationCode.length) {
       const credential = firebase.auth.PhoneAuthProvider.credential(
@@ -196,23 +201,14 @@ export default class App extends Component {
         .auth()
         .currentUser.linkAndRetrieveDataWithCredential(credential)
         .then(user => {
+          firebase.analytics().logEvent(`create_verification_success`);
+
           self.createFeed();
         })
         .catch(function(error) {
-          if (error.userInfo.error_name == "ERROR_INVALID_VERIFICATION_CODE") {
-            Alert.alert(
-              "Incorrect validation code",
-              "Please try again",
-              [
-                {
-                  text: "OK"
-                }
-              ],
-              { cancelable: true }
-            );
-          } else if (
-            error.userInfo.error_name == "ERROR_PROVIDER_ALREADY_LINKED"
-          ) {
+
+
+          if (error.code == "auth/provider-already-linked") {
             Alert.alert(
               `Your account is already linked to a different phone number`,
               `You cannot link your account to more than one phone number`,
@@ -223,9 +219,9 @@ export default class App extends Component {
               ],
               { cancelable: true }
             );
-          } else if (
-            error.userInfo.error_name == "ERROR_CREDENTIAL_ALREADY_IN_USE"
-          ) {
+          } else if (error.code == "auth/credential-already-in-use") {
+            firebase.analytics().logEvent(`create_number_already_in_use`);
+
             Alert.alert(
               `An account is already linked to ${self.state.phoneNumber}`,
               `Please try a different number or sign in to your linked account`,
@@ -240,18 +236,27 @@ export default class App extends Component {
                       .auth()
                       .signOut()
                       .then(function() {
-                        self.props.navigation.navigate("LoginName");
+                        self.setState({ ...self.defaultState });
                       })
                 }
               ],
               { cancelable: true }
             );
           } else {
-            alert(JSON.stringify(error.userInfo.error_name));
+
+              Alert.alert(
+                "Incorrect validation code",
+                "Please try again",
+                [
+                  {
+                    text: "OK"
+                  }
+                ],
+                { cancelable: true }
+              );
+            
+            // alert(JSON.stringify(error.userInfo.error_name));
           }
-          // alert("Incorrect validation code, please try again.");
-          // User couldn't sign in (bad verification code?)
-          // ...
         });
 
       //  confirmResult.confirm(verificationCode)
@@ -262,20 +267,86 @@ export default class App extends Component {
       //}
     }
   };
-
-  addHashTag = text => {
-    text = text.replace(/\s/g, "");
-    text = text.replace(/[\W_]+/g, "");
-    text = text.toLowerCase();
-    if (text.length && text.charAt(0) != "#") {
-      text = "#" + text;
-    }
+  sanitizePassword = text => {
+    let sanitizedText = text.replace(/[ .#$\\\/\[\]]+/g, "");
     let hasInput = text.length === 0;
 
-    this.setState({ disableNext: hasInput, castId: text });
+    if (sanitizedText !== text) {
+      console.log("forcing update");
+    
+      this.setState({ password: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, password: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ password: sanitizedText });
+    }
+
+    this.setState({ disableNext: hasInput });
+  };
+  sanitizeVerification = text => {
+    let sanitizedText = text.replace(/[ .#$\\\/\[\]]+/g, "");
+    let hasInput = text.length === 0;
+
+    if (sanitizedText !== text) {
+      console.log("forcing update");
+    
+      this.setState({ verificationCode: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, verificationCode: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ verificationCode: sanitizedText });
+    }
+
+    this.setState({ disableNext: hasInput });
+  };
+  sanitizeFeedName = text => {
+    let sanitizedText = text.replace(/[.#$\\\/\[\]]+/g, "");
+    let hasInput = text.length === 0;
+
+    if (sanitizedText !== text) {
+      console.log("forcing update");
+    
+      this.setState({ feedName: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, feedName: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ feedName: sanitizedText });
+    }
+
+    this.setState({ disableNext: hasInput });
+  };
+  addHashTag = castId => {
+    let sanitizedCastId = castId.replace(/[ .#$\\\/\[\]]+/g, "").toLowerCase();
+    let hasInput = castId.length === 0;
+   // if (sanitizedCastId.length && sanitizedCastId.charAt(0) != "#") {
+     // sanitizedCastId = "#" + sanitizedCastId;
+    //}
+    if (sanitizedCastId !== castId) {
+      console.log("forcing update");
+      this.setState({ castId: sanitizedCastId + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, castId: sanitizedCastId };
+        });
+      }, 0);
+    } else {
+      this.setState({ castId: sanitizedCastId });
+    }
+
+    this.setState({ disableNext: hasInput });
   };
 
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("createwedcast");
     const { currentUser } = firebase.auth();
     if (
       Dimensions.get("window").width <= 320 &&
@@ -291,8 +362,8 @@ export default class App extends Component {
 
   render() {
     let thirdIndicatorStyles = {
-      stepIndicatorSize: this.state.smallScreen? 20: 25,
-      currentStepIndicatorSize: this.state.smallScreen? 25 : 30,
+      stepIndicatorSize: this.state.smallScreen ? 20 : 25,
+      currentStepIndicatorSize: this.state.smallScreen ? 25 : 30,
       separatorStrokeWidth: 2,
       currentStepStrokeWidth: 3,
       stepStrokeCurrentColor: "#1F9FAC",
@@ -310,7 +381,7 @@ export default class App extends Component {
       stepIndicatorLabelFinishedColor: "transparent",
       stepIndicatorLabelUnFinishedColor: "transparent",
       labelColor: "#999999",
-      labelSize: this.state.smallScreen? 10 : 14,
+      labelSize: this.state.smallScreen ? 10 : 14,
       currentStepLabelColor: "#1F9FAC"
     };
     const page1 = (
@@ -327,13 +398,11 @@ export default class App extends Component {
         <View style={styles.buttonGroup}>
           <Input
             placeholder="Enter a name"
-            onChangeText={text => {
-              let hasInput = text.length === 0;
-              this.setState({ feedName: text, disableNext: hasInput });
-            }}
+            onChangeText={this.sanitizeFeedName}
+
             value={this.state.feedName}
             containerStyle={styles.pagintationInputContainer}
-            maxLength={25}
+            maxLength={40}
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             inputContainerStyle={{ borderBottomWidth: 0 }}
@@ -354,12 +423,12 @@ export default class App extends Component {
         <View style={styles.buttonGroup}>
           <Input
             placeholder="Enter a CastId"
-            onChangeText={text => this.addHashTag(text)}
+            onChangeText={this.addHashTag}
             ref={component => (this.castIdInput = component)}
-            value={this.state.castId}
+            value={this.state.castId.length ? '#' +this.state.castId: ''}
             autoCapitalize="none"
             containerStyle={styles.pagintationInputContainer}
-            maxLength={15}
+            maxLength={25}
             onFocus={() => this.setState({ inputFocused: true })}
             onBlur={() => this.setState({ inputFocused: false })}
             inputContainerStyle={{ borderBottomWidth: 0 }}
@@ -369,7 +438,7 @@ export default class App extends Component {
         {!this.state.inputFocused && (
           <Text style={{ padding: 20, fontSize: 12, color: "#999999" }}>
             Example: #MrAndMrsJones, #LoveAtFirstSite, #TheSmiths,
-            #RoyalWedding, etc.{" "}
+            #RoyalWedding, etc.
           </Text>
         )}
       </View>
@@ -386,10 +455,9 @@ export default class App extends Component {
         <View style={styles.buttonGroup}>
           <Input
             placeholder="Enter a Password"
-            onChangeText={text => {
-              let hasInput = text.length === 0;
-              this.setState({ password: text, disableNext: hasInput });
-            }}
+   
+            onChangeText={this.sanitizePassword}
+
             value={this.state.password}
             autoCapitalize="none"
             containerStyle={styles.pagintationInputContainer}
@@ -424,7 +492,9 @@ export default class App extends Component {
           onPress={() => {
             Orientation.unlockAllOrientations();
             this.props.navigation.navigate("UpdateAvatar", {
-              returnData: this.returnData.bind(this)
+              returnData: this.returnData.bind(this),
+              storagePath: `${this.state.castId}/weddingAvatar`
+
             });
           }}
           activeOpacity={0.7}
@@ -495,13 +565,7 @@ export default class App extends Component {
               <Input
                 placeholder="Verification code"
                 value={this.state.verificationCode}
-                onChangeText={text => {
-                  let hasInput = text.length === 0;
-                  this.setState({
-                    verificationCode: text,
-                    disableNext: hasInput
-                  });
-                }}
+                onChangeText={this.sanitizeVerification}
                 maxLength={20}
                 autoCapitalize="none"
                 containerStyle={styles.pagintationInputContainer}
@@ -510,7 +574,7 @@ export default class App extends Component {
                 onBlur={() => this.setState({ inputFocused: false })}
                 inputContainerStyle={{ borderBottomWidth: 0 }}
                 inputStyle={styles.pagintationInput}
-                />
+              />
             </View>
           </View>
         )}
@@ -526,18 +590,19 @@ export default class App extends Component {
           behavior="padding"
           enabled
         >
-          <View style={styles.stepIndicator}>
-            <Button
+                    <TouchableOpacity
               style={styles.cancel}
               onPress={() => this.props.navigation.navigate("Menu")}
               clear={true}
-              titleStyle={{
+           >
+              <Text style={{
                 color: "#999999",
                 paddingHorizontal: 0,
                 fontSize: 14
-              }}
-              title="Cancel"
-            />
+              }}>Cancel</Text>
+            </TouchableOpacity>
+          <View style={styles.stepIndicator}>
+
             {(!this.state.inputFocused || !this.state.smallScreen) && (
               <StepIndicator
                 stepCount={this.state.isAnonymous ? 5 : 4}
@@ -640,6 +705,9 @@ export default class App extends Component {
   };
   goToNextPage = () => {
     let self = this;
+
+    firebase.analytics().logEvent(`next_page`);
+
     Keyboard.dismiss();
     switch (self.state.currentPage) {
       case 0:
@@ -675,6 +743,8 @@ export default class App extends Component {
         .ref(`feeds/feedNew/${castId}/chatInfo`)
         .once("value", function(snapshotRef) {
           if (snapshotRef && snapshotRef.val()) {
+            firebase.analytics().logEvent(`castID_taken`);
+
             alert(`Sorry, #${castId} is taken. Please try a different #CastID`);
           } else {
             let nextPage = self.state.currentPage + 1;
@@ -689,7 +759,7 @@ export default class App extends Component {
           var errorCode = error.code;
           var errorMessage = error.message;
           alert(JSON.stringify(error));
-          alert(`Sorry, #${castId} is taken. Please try a different #CastID`);
+         // alert(`Sorry, #${castId} is taken. Please try a different #CastID`);
         });
     } else if (this.state.currentPage == 2) {
       //Keyboard.dismiss();
@@ -745,6 +815,8 @@ export default class App extends Component {
   };
 
   createFeed = () => {
+    firebase.analytics().logEvent(`create_feed`);
+
     const newFeedId = this.generateUID();
     let castId = this.state.castId.replace("#", "");
     let password = this.state.password;
@@ -755,7 +827,8 @@ export default class App extends Component {
       castType: this.state.castType,
       castId: castId,
       avatarUri: this.state.avatarUri,
-      feeds: {}
+      feeds: {},
+      startedAt: firebase.database.ServerValue.TIMESTAMP
     };
 
     //const feed = firebase.database().ref("feeds/feeds").push(newFeed);

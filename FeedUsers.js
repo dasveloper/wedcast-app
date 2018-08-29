@@ -43,7 +43,7 @@ export default class FeedUsers extends Component {
   };
 
   componentDidMount() {
-
+    firebase.analytics().setCurrentScreen("users");
     let self = this;
     let castId;
     if (this.props.navigation.getParam("castId")) {
@@ -69,13 +69,13 @@ export default class FeedUsers extends Component {
 
   render() {
     const { currentUser, offlineUsers, onlineUsers } = this.state;
-
+    
     let castId;
     if (this.props.navigation.getParam("castId")) {
       castId = this.props.navigation.getParam("castId", null);
     }
     let bottomMenu = (
-      <View style={styles.bottomMenu}>
+      <View style={styles.bottomMenuWrapper}>
         <Icon
           type="ionicon"
           underlayColor="transparent"
@@ -90,33 +90,30 @@ export default class FeedUsers extends Component {
     return (
       <SafeAreaView style={{ backgroundColor: '#f4f4f4',flex: 1 }}>
         <View style={styles.container}>
+        <View style={{ padding: 10 }}>
+            <Text style={styles.feedHeader}>Users</Text>
+          </View>
+          <View
+            style={{
+              padding: 10,
+              paddingTop: 15,
+              backgroundColor: "#fff",
+              flex: 1,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20
+            }}
+          >
           <SectionList
             style={styles.feedList}
-            renderItem={({ item, index, section }) => (
-              <ListItem
-                title={item.userName}
-                titleStyle={{ fontFamily: "Quicksand" }}
-                subtitleStyle={{ color: "#a8a8a8", fontFamily: "Quicksand" }}
-                style={{ borderBottomWidth: 1, borderColor: "#e8e8e8" }}
-                rightElement={
-                  <View
-                    style={{
-                      height: 10,
-                      width: 10,
-                      borderRadius: 10,
-                      backgroundColor: item.online ? "#C1D870" : "#e4e4e4"
-                    }}
-                  />
-                }
-              />
-            )}
+           //   keyExtractor={this.keyExtractor}
+              renderItem={this.renderItem}
+              extraData={this.state}
             renderSectionHeader={({ section: { title } }) => (
               <Text
                 style={{
-                  backgroundColor: "#f4f4f4",
+                  backgroundColor: "#fff",
                   fontFamily: "Quicksand",
                   fontSize: 12,
-                  marginTop: 15,
                   color: "#a8a8a8",
                   padding: 10,
                   textAlign: "center"
@@ -132,21 +129,46 @@ export default class FeedUsers extends Component {
             keyExtractor={(item, index) => item + index}
           />
         </View>
+        </View>
         {bottomMenu}
       </SafeAreaView>
     );
   }
 
-  keyExtractor = (item, index) => item.castId;
+  //keyExtractor = (item,index,section) => item.castId;
+  renderItem = ({ item, section }) => {
+    let image =
+      item.avatarUri == undefined
+        ? require("./assets/placeholder.png")
+        : { uri: item.avatarUri };
+    return (
+      <ListItem
+        id={item.castId}
+        title={item.userName}
+        titleStyle={{ fontFamily: "Quicksand" }}
+        subtitleStyle={{ color: "#a8a8a8", fontFamily: "Quicksand" }}
+        leftAvatar={{
+          size: "medium",
+          source: image,
+          avatarStyle: {
+            backgroundColor: "#1F9FAC"
+          },
+          //overlayContainerStyle: {overflow: 'hidden', backgroundColor: "transparent" },
+        }}
+        rightElement={
+          <View
+            style={{
+              height: 10,
+              width: 10,
+              borderRadius: 10,
+              backgroundColor: item.online ? "#C1D870" : "#e4e4e4"
+            }}
+          />
+        }
+      />
+    );
+  };
 
-  renderItem = ({ item }) => (
-    <ListItem
-      title={item.userName}
-      subtitleStyle={{ color: "#a8a8a8" }}
-      style={{ borderBottomWidth: 1, borderColor: "#e8e8e8" }}
-      chevron
-    />
-  );
   goToCreateFeed = () => {
     this.props.navigation.navigate("CreateFeed");
   };
@@ -155,9 +177,14 @@ export default class FeedUsers extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "flex-start",
-    flexDirection: "column",
-    backgroundColor: "#f4f4f4"
+    backgroundColor: "#1F9FAC"
+  },
+  feedHeader: {
+    fontSize: 22,
+    fontFamily: "Quicksand",
+    color: "#fff",
+    textAlign: "left",
+    fontWeight: "800"
   },
   nav: {
     backgroundColor: "#E8A892",
@@ -195,18 +222,19 @@ const styles = StyleSheet.create({
     marginHorizontal: 10
   },
   feedList: {
-    flex: 1
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 10,
   },
-  bottomMenu: {
-    flex: 0,
-    padding: 5,
-    maxHeight: 50,
+  bottomMenuWrapper: {
+    paddingHorizontal: 5,
     display: "flex",
-    justifyContent: "flex-start",
     alignItems: "center",
 
+    backgroundColor: "#fff",
     zIndex: 99,
-    flexDirection: "row"
+    flexDirection: "row",
+    justifyContent: "space-between"
   },
   navIcon: {
     marginHorizontal: 10

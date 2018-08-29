@@ -4,7 +4,6 @@
  * @flow
  */
 import Orientation from "react-native-orientation-locker";
-import Permissions from "react-native-permissions";
 import CameraComponent from "./Camera";
 import React, { Component } from "react";
 import {
@@ -42,6 +41,8 @@ export default class Main extends Component {
     };
   }
   _handleAppStateChange = nextAppState => {
+    firebase.analytics().logEvent("app_state_change");
+
     if (
       this.state.appState.match(/active/) &&
       nextAppState.match(/inactive|background/)
@@ -79,6 +80,7 @@ export default class Main extends Component {
 
 
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("camera");
     AppState.addEventListener("change", this._handleAppStateChange);
     
     let user = this.state.currentUser.uid;
@@ -114,6 +116,9 @@ export default class Main extends Component {
           navigation={this.props.navigation}
           castId = {castId}
           showBottomNav = {true}
+          showCircleOverlay={false}
+          cameraModeBack={true}
+
           returnPage="WeddingDetails"
           returnData={this.returnData}
         />
@@ -124,6 +129,8 @@ export default class Main extends Component {
     this.uploadImageAsync(avatarUri);
   };
   async uploadImageAsync(imageUrl) {
+    firebase.analytics().logEvent("save_image_main");
+
     const { currentUser } = this.state;
     let castId;
     this.setState({ savingPhoto: true });
@@ -133,7 +140,7 @@ export default class Main extends Component {
     }
     const ref = firebase
       .storage()
-      .ref()
+      .ref(`${castId}/images`)
       .child(uuid.v4());
 
     var metadata = {
@@ -162,7 +169,7 @@ export default class Main extends Component {
             (Width, Height) => {
               //self.saveToCameraRoll(downloadURL);
               let comment = {
-                user: currentUser,
+                user: {displayName: currentUser.displayName, uid: currentUser.uid, photoURL: currentUser.photoURL},
                 uri: downloadURL,
                 width: Width,
                 height: Height

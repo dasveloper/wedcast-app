@@ -32,23 +32,27 @@ export default class PrivateFeed extends React.Component {
   };
 
   requestAccess = () => {
+    firebase.analytics().logEvent("request_access");
+
     let self = this;
 
     let params = this.props.navigation.state.params;
     let feed = params.feed;
     let password = this.state.password;
     let castId = params.castId;
-    let user = firebase.auth().currentUser.displayName;
-    let userObj = { userName: user, password: password };
+    let user = firebase.auth().currentUser;
+    let userObj = { userName: user.displayName, avatar: user.photoUrl, password: password };
     firebase
       .database()
       .ref(`feeds/feedNew/${castId}/members/${firebase.auth().currentUser.uid}`)
       .set(userObj, function(error) {
         if (error) self.setState({ errorMessage: "Incorrect password" });
         else {
+          firebase.analytics().logEvent("password_correct");
+
           self.props.navigation.navigate("WeddingDetails", {
             castId: castId,
-            feedName: feed.feedName
+            feedName: feed.feedName,
           });
         }
       });
@@ -59,6 +63,7 @@ export default class PrivateFeed extends React.Component {
   };
 
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("privatefeed");
     if (Dimensions.get('window').width <= 320){
       this.setState({smallScreen: true})
     }
@@ -66,6 +71,21 @@ export default class PrivateFeed extends React.Component {
     let feed = params.feed;
     this.setState({ feed: feed });
   }
+  sanitizePassword = text => {
+    let sanitizedText = text.replace(/[ .#$\\\/\[\]]+/g, "");
+
+    if (sanitizedText !== text) {
+     
+      this.setState({ password: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, password: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ password: sanitizedText });
+    }
+  };
   render() {
     const { inputFocused, password, errorMessage, feed } = this.state;
    
@@ -157,7 +177,9 @@ export default class PrivateFeed extends React.Component {
             onBlur={() => this.setState({ inputFocused: false })}
             blurOnSubmit={false}
             value={password}
-            onChangeText={password => this.setState({ password })}
+            maxLength={15}
+            onChangeText={this.sanitizePassword}
+
             containerStyle={styles.searchInputContainer}
             inputContainerStyle={{ borderBottomWidth: 0 }}
             inputStyle={styles.searchInput}

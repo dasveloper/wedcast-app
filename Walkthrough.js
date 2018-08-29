@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import SplashScreen from "react-native-splash-screen";
+import firebase from "react-native-firebase";
 
 import { Button, Text } from "react-native-elements";
 import { Image, StyleSheet, View } from "react-native";
@@ -14,6 +15,7 @@ export default class Walkthrough extends Component {
     };
   }
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("walkthrough");
     SplashScreen.hide();
   }
   render() {
@@ -21,6 +23,7 @@ export default class Walkthrough extends Component {
       <View style={{ flex: 1 }}>
         <View style={styles.walkthoughPage}>
           <Image
+            resizeMethod="resize"
             source={require("./assets/walkthrough-phone.png")}
             style={styles.walkthoughImage}
           />
@@ -36,6 +39,7 @@ export default class Walkthrough extends Component {
       <View style={{ flex: 1 }}>
         <View style={styles.walkthoughPage}>
           <Image
+            resizeMethod="resize"
             source={require("./assets/walkthrough-photos.png")}
             style={styles.walkthoughImage}
           />
@@ -49,6 +53,7 @@ export default class Walkthrough extends Component {
       <View style={{ flex: 1 }}>
         <View style={styles.walkthoughPage}>
           <Image
+            resizeMethod="resize"
             source={require("./assets/walkthrough-projector.png")}
             style={styles.walkthoughImage}
           />
@@ -62,6 +67,7 @@ export default class Walkthrough extends Component {
       <View style={{ flex: 1 }}>
         <View style={styles.walkthoughPage}>
           <Image
+            resizeMethod="resize"
             source={require("./assets/walkthrough-laptop.png")}
             style={styles.walkthoughImage}
           />
@@ -72,7 +78,7 @@ export default class Walkthrough extends Component {
         </Text>
       </View>
     );
-    let pages = [phonePage, photoPage, projectorPage, laptopPage];
+    let pages = [phonePage, photoPage, laptopPage, projectorPage];
 
     return (
       <View style={styles.container}>
@@ -80,7 +86,7 @@ export default class Walkthrough extends Component {
           style={{ flex: 1 }}
           indicator={this._renderDotIndicator()}
         >
-          {pages.map((page, index)=> this.renderViewPagerPage(page, index))}
+          {pages.map((page, index) => this.renderViewPagerPage(page, index))}
         </IndicatorViewPager>
 
         <View style={styles.pagerNavigation}>

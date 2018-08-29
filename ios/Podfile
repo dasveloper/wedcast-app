@@ -19,6 +19,10 @@ target 'Wedcast' do
 
     pod 'ReactNativePermissions', :path => '../node_modules/react-native-permissions'
 
+    pod 'RNDeviceInfo', :path => '../node_modules/react-native-device-info'
+
+    pod 'RNViewShot', :path => '../node_modules/react-native-view-shot'
+
   end
 
   target 'WedcastTests' do

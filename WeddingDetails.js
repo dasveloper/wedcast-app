@@ -4,6 +4,7 @@
  * @flow
  */
 import Orientation from "react-native-orientation-locker";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import React, { Component } from "react";
 import {
@@ -29,7 +30,9 @@ export default class WeddingDetails extends Component {
     feed: null,
     feedKey: null,
     uploads: null,
-    members: null
+    members: null,
+    serverTime: null,
+    castId: null
   };
 
   constructor(props) {
@@ -44,6 +47,7 @@ export default class WeddingDetails extends Component {
     let self = this;
     if (this.props.navigation.getParam("castId")) {
       castId = this.props.navigation.getParam("castId", null);
+      this.setState({castId: castId})
     }
     if (castId != null) {
       firebase
@@ -55,6 +59,15 @@ export default class WeddingDetails extends Component {
     }
   };
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("details");
+    firebase
+      .database()
+      .ref("/.info/serverTimeOffset")
+      .on("value", function(offset) {
+        var offsetVal = offset.val() || 0;
+        var serverTime = Date.now() + offsetVal;
+        self.setState({ serverTime });
+      });
     let castId;
     let self = this;
     if (this.props.navigation.getParam("castId")) {
@@ -85,9 +98,29 @@ export default class WeddingDetails extends Component {
         self.setState({ members: snapshot.val() });
       });
   }
+  sanitizePassword = text => {
+    let sanitizedText = text.replace(/[ .#$\\\/\[\]]+/g, "");
+    let hasInput = text.length === 0;
 
+    if (sanitizedText !== text) {
+      console.log("forcing update");
+
+      this.setState({ password: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, password: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ password: sanitizedText });
+    }
+
+    this.setState({ disableNext: hasInput });
+  };
   toggleChangeInput = () => {
     if (this.state.changingPassword) {
+      firebase.analytics().logEvent("change_password");
+
       let password = this.state.password;
       firebase
         .database()
@@ -101,6 +134,26 @@ export default class WeddingDetails extends Component {
       this.setState({ changingPassword: true });
     }
   };
+  leaveWedding= () => {
+    firebase.analytics().logEvent("leave_wedding");
+
+    let self =this;
+    firebase
+    .database()
+    .ref(`feeds/feedNew/${self.state.feed.castId}/members/${self.state.currentUser.uid}`)
+    .remove()
+
+    firebase
+    .database()
+    .ref(`users/${self.state.currentUser.uid}/feedList/${self.state.feed.castId}`)
+    .remove()
+
+    firebase
+    .database()
+    .ref(`users/${self.state.currentUser.uid}/feedList/${self.state.feed.castId}`)
+    .remove()
+    this.props.navigation.navigate("Menu");
+  }
   render() {
     const {
       currentUser,
@@ -110,8 +163,21 @@ export default class WeddingDetails extends Component {
       password,
       feedKey,
       uploads,
-      members
+      members,
+      serverTime
     } = this.state;
+    let expiresIn;
+
+    // get total seconds between the times
+    if (feed && !expiresIn) {
+      let year = 365;
+      let delta = Math.abs(feed.startedAt - serverTime) / 1000;
+
+      // calculate (and subtract) whole days
+      var days = Math.floor(delta / 86400);
+      delta -= days * 86400;
+      expiresIn = year - days;
+    }
     let avatar;
     if (feed) {
       avatar = feed.avatarUri
@@ -127,8 +193,9 @@ export default class WeddingDetails extends Component {
             <TextInput
               autoFocus={true}
               ref={component => (this.changePasswordInput = component)}
-              onChangeText={text => this.setState({ password: text })}
+              onChangeText={this.sanitizePassword}
               style={styles.changingPassword}
+              maxLength={20}
               value={password}
             />
           )}
@@ -180,7 +247,14 @@ export default class WeddingDetails extends Component {
           )}
         </View>
       );
-
+      expires = expiresIn ? (
+        <View>
+          <Text style={styles.detailLabel}>Expires in: </Text>
+          <Text style={styles.detail}>{expiresIn} days</Text>
+        </View>
+      ) : (
+        undefined
+      );
       castId = (
         <View>
           <Text style={styles.detailLabel}>CastID: </Text>
@@ -190,7 +264,9 @@ export default class WeddingDetails extends Component {
       feedUrl = (
         <View>
           <Text style={styles.detailLabel}>Feed Url: </Text>
-          <Text style={styles.detail}>{`https://wedcast.app/cast/${feed.castId}`}</Text>
+          <Text style={styles.detail}>{`https://wedcast.app/cast/${
+            feed.castId
+          }`}</Text>
         </View>
       );
       weddingType = (
@@ -199,6 +275,13 @@ export default class WeddingDetails extends Component {
           <Text style={styles.detail}>
             {feed.castType === 0 ? "Small Wedding" : "Large Wedding"}
           </Text>
+        </View>
+      );
+      leaveWedcast = (
+        <View>
+  <TouchableOpacity onPress={this.leaveWedding} style={styles.leaveButton}>
+              <Text style={styles.leaveButtonText}>Leave wedding</Text>
+            </TouchableOpacity>
         </View>
       );
       photos = (
@@ -260,7 +343,8 @@ export default class WeddingDetails extends Component {
 
                   feed.owner === currentUser.uid
                     ? this.props.navigation.navigate("UpdateAvatar", {
-                        returnData: this.returnData.bind(this)
+                        returnData: this.returnData.bind(this),
+                        storagePath: `${feed.castId}/weddingAvatar`
                       })
                     : undefined;
                 }}
@@ -301,6 +385,11 @@ export default class WeddingDetails extends Component {
             />
 
             <ListItem containerStyle={styles.detailItem} title={feedUrl} />
+            <ListItem containerStyle={styles.detailItem} title={expires} />
+           {feed.owner !== currentUser.uid && <ListItem
+              containerStyle={styles.detailItem}
+              title={leaveWedcast}
+            />}
           </ScrollView>
         )}
       </SafeAreaView>
@@ -308,7 +397,7 @@ export default class WeddingDetails extends Component {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   nav: {
     backgroundColor: "#fff",
     flexDirection: "row",
@@ -316,7 +405,7 @@ const styles = StyleSheet.create({
     padding: 10
   },
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     flex: 1
   },
   containerColumn: {
@@ -379,5 +468,19 @@ const styles = StyleSheet.create({
   changingPassword: {
     fontSize: 20,
     fontFamily: "Quicksand"
-  }
+  },
+  leaveButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#d93636",
+    borderRadius: 4,
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    margin: "auto"
+  },
+  leaveButtonText: {
+    color: "#fff",
+    fontFamily: "Quicksand",
+    fontSize: "20rem"
+  },
 });

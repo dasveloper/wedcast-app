@@ -17,6 +17,9 @@ import PrivateFeed from "./PrivateFeed";
 import FeedUsers from "./FeedUsers";
 import LoginPhone from "./LoginPhone";
 import Profile from "./Profile";
+import PrivacyPolicy from "./PrivacyPolicy";
+import ImageView from "./ImageView";
+import Notifications from "./Notifications";
 
 import LoginName from "./LoginName";
 import LoginAvatar from "./LoginAvatar";
@@ -39,8 +42,12 @@ const firebaseConfig = {
 };
 StatusBar.setHidden(true);
 const entireScreenWidth = Dimensions.get("window").width;
-
 EStyleSheet.build({ $rem: entireScreenWidth / 380 });
+
+firebase.analytics().logEvent("opened");
+
+
+
 // create our app's navigation stack
 const App = StackNavigator(
   {
@@ -50,8 +57,14 @@ const App = StackNavigator(
     Walkthrough: {
       screen: Walkthrough
     },
+    PrivacyPolicy:{
+      screen: PrivacyPolicy
+    },
     PrivateFeed: {
       screen: PrivateFeed
+    },
+    ImageView:{
+      screen: ImageView
     },
     LoginPhone: {
       screen: LoginPhone
@@ -80,8 +93,8 @@ const App = StackNavigator(
     UpdateAvatar: {
       screen: UpdateAvatar
     },
-    UpdateAvatar: {
-      screen: UpdateAvatar
+    Notifications: {
+      screen: Notifications
     },
     Profile: {
       screen: Profile

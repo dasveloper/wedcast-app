@@ -43,6 +43,8 @@ export default class Menu extends Component {
     myWeddings: null,
     myWeddingList: null,
     errorMessage: null,
+    heroHeight: null,
+    heroWidth: null,
     flyout: new Animated.Value(200)
   };
   constructor(props) {
@@ -83,6 +85,18 @@ export default class Menu extends Component {
       });
   };
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("menu");
+    const srcHeight = 268;
+    const srcWidth = 700;
+    const maxHeight = Dimensions.get("window").height; // or something else
+    const maxWidth = Dimensions.get("window").width;
+
+    const ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+    this.setState({
+      heroWidth: srcWidth * ratio,
+      heroHeight: srcHeight * ratio
+    });
+
     if (
       Dimensions.get("window").width <= 320 &&
       Dimensions.get("window").height <= 500
@@ -253,106 +267,66 @@ export default class Menu extends Component {
       <SafeAreaView
         style={{ flex: 1, position: "relative", backgroundColor: "#fff" }}
       >
-        {currentUser && (
-          <Overlay
-            isVisible={this.state.accountMenuVisible}
-            containerStyle={{ zIndex: 999 }}
-            overlayStyle={{
-              zIndex: 999,
-              height: "90%",
-              flexDirection: "column",
-              borderRadius: 4
-            }}
-            onBackdropPress={() => this.setState({ accountMenuVisible: false })}
-          >
-            <View style={{ alignItems: "center" }}>
-              {currentUser.displayName && (
-                <Text style={styles.userName}>{currentUser.displayName}</Text>
-              )}
-
-              <Avatar
-                size={100}
-                rounded
-                source={{ uri: currentUser.photoURL || defaultAvatar }}
-                activeOpacity={0.7}
-                onPress={() => {
-                  Orientation.unlockAllOrientations();
-
-                  this.props.navigation.navigate("UpdateAvatar", {
-                    returnData: this.returnData.bind(this)
-                  });
-                }}
-              />
-            </View>
-            <View style={{ marginTop: 20 }}>
-              <ListItem
-                containerStyle={styles.settingsItem}
-                title={
-                  <View>
-                    <Text style={styles.settingsActions}>Privacy Policy</Text>
-                  </View>
-                }
-              />
-              {this.state.currentUser.isAnonymous && (
-                <ListItem
-                  containerStyle={styles.settingsItem}
-                  onPress={() => this.props.navigation.navigate("LoginPhone")}
-                  title={
-                    <View>
-                      <Text style={styles.settingsActions}>
-                        Create recovery account
-                      </Text>
-                    </View>
-                  }
-                />
-              )}
-            </View>
-            <TouchableOpacity onPress={this.logout} style={styles.logoutButton}>
-              <Text style={styles.logoutButtonText}> Log Out </Text>
-            </TouchableOpacity>
-          </Overlay>
-        )}
         <ScrollView style={styles.container}>
           <View style={styles.nav}>
-            {currentUser && (
+            <Icon
+              type="evilicon"
+              name="user"
+              underlayColor="transparent"
+              iconStyle={styles.navIcon}
+              containerStyle={{marginTop: 5}}
+              color="#1F9FAC"
+              size={42}
+              onPress={() =>
+                this.props.navigation.navigate("Profile", {
+                  currentUser: currentUser
+                })
+              }
+            />
+            {false && (
               <Avatar
                 size={45}
                 rounded
                 activeOpacity={0.7}
                 source={{ uri: currentUser.photoURL || defaultAvatar }}
-                
-                onPress={()=> this.props.navigation.navigate("Profile", {
-                  currentUser: currentUser
-                })}
+                onPress={() =>
+                  this.props.navigation.navigate("Profile", {
+                    currentUser: currentUser
+                  })
+                }
               />
             )}
-            <Image style={styles.logo} source={require("./assets/logo-black.jpg")}/>
+            {false && (
+              <Image
+                style={styles.logo}
+                source={require("./assets/logo-blue.png")}
+              />
+            )}
             <View style={styles.notifications}>
               <Icon
                 type="ionicon"
                 name="ios-mail-outline"
-                color="transparent"
+                color="#1F9FAC"
                 iconStyle={styles.navIcon}
                 size={40}
-              />
-            </View>
-          </View>
-          <View style={styles.topWrapper}>
-          <Text style={styles.searchLabel}>My Weddings</Text>
-
-            <View style={{ flex: 1 }}>
-              <FlatList
-                keyExtractor={this.keyExtractor}
-                data={this.state.myWeddings}
-                renderItem={this.renderItem}
-                extraData={this.state}
-                ListEmptyComponent={
-                  <Text style={{ paddingVertical: 20, color: "#999999" }}>
-                    You don't have any weddings, create one below.
-                  </Text>
+                onPress={() =>
+                  this.props.navigation.navigate("Notifications", {
+                    currentUser: currentUser
+                  })
                 }
               />
             </View>
+          </View>
+          <Image
+            style={{
+              width: this.state.heroWidth,
+              height: this.state.heroHeight
+            }}
+            resizeMode="cover"
+            source={require("./assets/hero-large-min.jpg")}
+          />
+
+          <View style={styles.topWrapper}>
             <Text style={styles.searchLabel}>Find Wedcast</Text>
             <View style={styles.buttonGroup}>
               <Input
@@ -361,14 +335,14 @@ export default class Menu extends Component {
                 value={this.state.feedId}
                 autoCapitalize="none"
                 containerStyle={styles.searchInputContainer}
-                inputContainerStyle={{padding: 0,borderBottomWidth: 0 }}
+                inputContainerStyle={{ padding: 0, borderBottomWidth: 0 }}
                 inputStyle={styles.searchInput}
               />
               <Button
                 buttonStyle={styles.searchButton}
                 title="Go"
                 titleStyle={styles.searchButtonTitle}
-                disabledStyle={{ backgroundColor: "#9cdce2" }}
+                disabledStyle={{ backgroundColor: "#1F9FAC" }}
                 disabled={this.state.feedId == "" || this.state.feedId == "#"}
                 onPress={this.goToFeed.bind(this, this.state.feedId)}
               />
@@ -389,7 +363,7 @@ export default class Menu extends Component {
             <Text style={styles.or}>OR</Text>
             <View>
               <TouchableOpacity
-               style={styles.createButton}
+                style={styles.createButton}
                 title="Create Wedcast"
                 onPress={this.goToCreateFeed.bind(this)}
               >
@@ -397,20 +371,36 @@ export default class Menu extends Component {
               </TouchableOpacity>
             </View>
           </View>
-          <FlatList
-            contentContainerStyle={
-              !this.state.userFeeds && styles.centerEmptySet
-            }
-            keyExtractor={this.keyExtractor}
-            data={this.state.userFeeds}
-            renderItem={this.renderItem}
-            extraData={this.state}
-            ListEmptyComponent={
-              <Text style={{ paddingVertical: 20, color: "#999999" }}>
+
+          <View style={{ flex: 1, padding: 10 }}>
+            <Text style={styles.listLabel}>Your weddings</Text>
+
+            <FlatList
+              keyExtractor={this.keyExtractor}
+              data={this.state.myWeddings}
+              renderItem={this.renderItem}
+              extraData={this.state}
+            />
+            <FlatList
+              contentContainerStyle={
+                !this.state.userFeeds && styles.centerEmptySet
+              }
+              keyExtractor={this.keyExtractor}
+              data={this.state.userFeeds}
+              renderItem={this.renderItem}
+              extraData={this.state}
+              // ListEmptyComponent={
+              //   <Text style={{ paddingVertical: 20, color: "#999999" }}>
+              //     Currently not attending any weddings
+              //  </Text>
+              // }
+            />
+            {!(this.state.myWeddings || this.state.userFeeds) && (
+              <Text style={{ paddingBottom: 20, color: "#999999" }}>
                 Currently not attending any weddings
               </Text>
-            }
-          />
+            )}
+          </View>
         </ScrollView>
         <Animated.View
           style={{
@@ -469,12 +459,26 @@ export default class Menu extends Component {
       </SafeAreaView>
     );
   }
-  addHashTag = text => {
-    text = text.replace(/\s/g, "");
-    if (text.length && text.charAt(0) != "#") {
-      text = "#" + text;
+
+  addHashTag = castId => {
+    let sanitizedCastId = castId.replace(/[ .#$\\\/\[\]]+/g, "").toLowerCase();
+    let hasInput = castId.length === 0;
+    if (sanitizedCastId.length && sanitizedCastId.charAt(0) != "#") {
+      sanitizedCastId = "#" + sanitizedCastId;
     }
-    this.setState({ feedId: text });
+    if (sanitizedCastId !== castId) {
+      console.log("forcing update");
+      this.setState({ feedId: sanitizedCastId + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, feedId: sanitizedCastId };
+        });
+      }, 0);
+    } else {
+      this.setState({ feedId: sanitizedCastId });
+    }
+
+    this.setState({ disableNext: hasInput });
   };
   goToFeed = feedId => {
     let feed = null;
@@ -533,7 +537,6 @@ export default class Menu extends Component {
   };
   keyExtractor = (item, index) => item.castId;
   renderItem = ({ item }) => {
-    
     let image =
       item.avatarUri == undefined
         ? require("./assets/placeholder.png")
@@ -546,7 +549,11 @@ export default class Menu extends Component {
         onPress={this.goToFeed.bind(this, item.castId)}
         titleStyle={{ fontFamily: "Quicksand" }}
         subtitleStyle={{ color: "#a8a8a8", fontFamily: "Quicksand" }}
-        style={{ borderBottomWidth: 1, borderColor: "#e8e8e8", marginBottom: 5 }}
+        style={{
+          borderBottomWidth: 1,
+          borderColor: "#e8e8e8",
+          marginBottom: 5
+        }}
         chevron
         leftAvatar={{
           rounded: true,
@@ -554,13 +561,18 @@ export default class Menu extends Component {
           avatarStyle: {
             backgroundColor: "#1F9FAC"
           },
-          overlayContainerStyle: {overflow: 'hidden', backgroundColor: "transparent" },
+          overlayContainerStyle: {
+            overflow: "hidden",
+            backgroundColor: "transparent"
+          },
           source: image
         }}
       />
     );
   };
   goToCreateFeed = () => {
+    firebase.analytics().logEvent(`create_wedcast`);
+
     this.props.navigation.navigate("CreateFeed");
   };
 }
@@ -576,11 +588,11 @@ const styles = EStyleSheet.create({
     paddingHorizontal: 10,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#fff",
+    alignItems: "flex-start",
     zIndex: 10,
-    borderBottomWidth: 1,
-    borderColor: "#f4f4f4"
+    position: "absolute",
+    left: 0,
+    right: 0
   },
   notifications: {
     position: "relative"
@@ -621,7 +633,7 @@ const styles = EStyleSheet.create({
   logoutButtonText: {
     color: "#fff",
     fontFamily: "Quicksand",
-    fontSize: '15rem'
+    fontSize: "15rem"
   },
   topWrapper: {
     shadowOpacity: 0.3,
@@ -630,22 +642,35 @@ const styles = EStyleSheet.create({
     shadowOffset: { height: 10, width: 0 },
     padding: 10,
     zIndex: 2,
-    backgroundColor: "#fff",
-    marginTop: 10
+    backgroundColor: "#A8BF59",
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10
   },
 
   logo: {
-
-    flex:1,
-    height: '80%',
+    flex: 1,
+    height: "80%",
     marginLeft: -10,
-    resizeMode: 'contain',
-    width: null,
+    resizeMode: "contain",
+    width: null
+  },
+  hero: {
+    width: "100%",
+    height: null,
+    flex: 1
+  },
+  listLabel: {
+    fontSize: "18rem",
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#000",
+    fontFamily: "Quicksand"
   },
   searchLabel: {
     fontSize: "18rem",
     fontWeight: "bold",
     marginBottom: 10,
+    color: "#000",
     fontFamily: "Quicksand"
   },
   searchInputContainer: {
@@ -654,14 +679,14 @@ const styles = EStyleSheet.create({
     flex: 1,
     alignSelf: "center",
     borderRadius: 0,
-    borderTopLeftRadius: 5,
+    borderTopLeftRadius: 10,
     paddingHorizontal: "5rem",
-    paddingVertical: "15rem",
+    paddingVertical: "10rem",
     height: null,
-    borderBottomLeftRadius: 5
+    borderBottomLeftRadius: 10
   },
   searchInput: {
-    fontSize: "25rem",
+    fontSize: "20rem",
     fontFamily: "Quicksand",
     padding: 0,
     height: null
@@ -673,37 +698,36 @@ const styles = EStyleSheet.create({
     borderColor: "transparent",
     borderWidth: 0,
     borderRadius: 0,
-    borderTopRightRadius: 5,
-    borderBottomRightRadius: 5,
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
     paddingHorizontal: "10rem",
-    paddingVertical: "15rem",
-
+    paddingVertical: "10rem"
   },
   searchButtonTitle: {
     fontFamily: "Quicksand",
-    fontSize: "25rem",
+    fontSize: "20rem",
     padding: 0
   },
   createButton: {
     flex: 1,
     backgroundColor: "#1F9FAC",
-    borderRadius: 5,
+    borderRadius: 10,
     display: "flex",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    padding: '10rem'
+    padding: "10rem"
   },
   createButtonText: {
-    fontSize: "25rem",
+    fontSize: "20rem",
     color: "#fff",
     fontFamily: "Quicksand"
   },
   or: {
-      fontFamily: "Quicksand",
-      margin: 10,
-      fontSize: "14rem",
-      alignSelf: "center"
-  
+    fontFamily: "Quicksand",
+    margin: 10,
+    fontSize: "14rem",
+    alignSelf: "center",
+    color: "#000"
   }
 });

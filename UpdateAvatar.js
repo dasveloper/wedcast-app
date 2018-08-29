@@ -21,7 +21,10 @@ export default class UpdateAvatar extends Component {
     super(props);
   }
 
-  componentDidMount() {}
+  componentDidMount() {
+    firebase.analytics().setCurrentScreen("updateavatar");
+
+  }
   render() {
     return (
       <View style={styles.container}>
@@ -29,6 +32,8 @@ export default class UpdateAvatar extends Component {
           ref={component => (this.camera = component)}
           navigation={this.props.navigation}
           showBottomNav={false}
+          showCircleOverlay={true}
+          cameraModeBack={false}
           returnData={this.returnData}
         />
       </View>
@@ -38,9 +43,11 @@ export default class UpdateAvatar extends Component {
     this.uploadImageAsync(avatarUri);
   };
   async uploadImageAsync(imageUrl) {
+    firebase.analytics().logEvent("save_update_avatar");
+   let storagePath = this.props.navigation.state.params.storagePath;
     const ref = firebase
       .storage()
-      .ref()
+      .ref(storagePath)
       .child(uuid.v4());
     var metadata = {
       contentType: "image/jpeg"

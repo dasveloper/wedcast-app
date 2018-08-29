@@ -33,12 +33,15 @@ export default class LoginName extends React.Component {
   };
   goToAvatar = () => {
     let userName = this.state.name;
+    firebase.analytics().logEvent("name_set");
+
     this.props.navigation.navigate("LoginAvatar", {
       userName: userName,
       currentUser: this.state.currentUser
     });
   };
   componentDidMount() {
+    firebase.analytics().setCurrentScreen("loginname");
     const { currentUser } = firebase.auth();
   }
   static getDerivedStateFromProps(nextProps, prevState) {
@@ -54,7 +57,23 @@ export default class LoginName extends React.Component {
       }
     } else return null;
   }
+  sanitizeName = text => {
+    let sanitizedText = text.replace(/[.#$\\\/\[\]]+/g, "");
 
+    if (sanitizedText !== text) {
+      console.log("forcing update");
+    
+      this.setState({ name: sanitizedText + " " }); // this character is not alphanumerical 'x', it's a forbidden character '✕' (cross)
+      setTimeout(() => {
+        this.setState(previousState => {
+          return { ...previousState, name: sanitizedText };
+        });
+      }, 0);
+    } else {
+      this.setState({ name: sanitizedText });
+    }
+
+  };
   render() {
     const { inputFocused, name } = this.state;
 
@@ -111,7 +130,8 @@ export default class LoginName extends React.Component {
                 onBlur={() => this.setState({ inputFocused: false })}
                 blurOnSubmit={false}
                 value={name}
-                onChangeText={name => this.setState({ name })}
+                maxLength={40}
+                onChangeText={this.sanitizeName}
                 style={[
                   {
                     fontFamily: "Quicksand",

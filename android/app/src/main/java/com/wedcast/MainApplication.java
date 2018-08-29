@@ -3,23 +3,20 @@ package com.wedcast;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import fr.greweb.reactnativeviewshot.RNViewShotPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
+import org.devio.rn.splashscreen.SplashScreenReactPackage;
 import org.wonday.orientation.OrientationPackage;
 import io.invertase.firebase.RNFirebasePackage;
-import com.RNFetchBlob.RNFetchBlobPackage;
+import com.learnium.RNDeviceInfo.RNDeviceInfo;
 import org.reactnative.camera.RNCameraPackage;
-import com.oblador.vectoricons.VectorIconsPackage;
-import org.wonday.orientation.OrientationPackage;
-import io.invertase.firebase.RNFirebasePackage;
 import com.RNFetchBlob.RNFetchBlobPackage;
-import org.reactnative.camera.RNCameraPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
-import org.devio.rn.splashscreen.SplashScreenReactPackage;
 import io.invertase.firebase.auth.RNFirebaseAuthPackage;
-
+import io.invertase.firebase.analytics.RNFirebaseAnalyticsPackage;
 import io.invertase.firebase.storage.RNFirebaseStoragePackage;
 import io.invertase.firebase.database.RNFirebaseDatabasePackage;
 
@@ -39,16 +36,18 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNViewShotPackage(),
             new VectorIconsPackage(),
             new SplashScreenReactPackage(),
             new OrientationPackage(),
             new RNFirebasePackage(),
             new RNFetchBlobPackage(),
+            new RNDeviceInfo(),
             new RNCameraPackage(),
-        new RNFirebaseAuthPackage(), 
+        new RNFirebaseAuthPackage(),
       new RNFirebaseDatabasePackage(),
-      
-          new RNFirebaseStoragePackage()
+          new RNFirebaseStoragePackage(),
+          new RNFirebaseAnalyticsPackage()
       );
     }
 

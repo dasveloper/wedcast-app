@@ -19,6 +19,7 @@ import {
   Animated,
   Alert,
   Image,
+  Linking,
   Dimensions
 } from "react-native";
 import firebase from "react-native-firebase";
@@ -37,7 +38,8 @@ const defaultAvatar =
 export default class Profile extends Component {
   defaultState = {
     currentUser: null,
-    accountMenuVisible: false
+    accountMenuVisible: false,
+    policyVisible: false
   };
   constructor(props) {
     super(props);
@@ -58,6 +60,8 @@ export default class Profile extends Component {
     }
   }
   logout = () => {
+    firebase.analytics().logEvent("logout");
+
     let self = this;
     if (this.state.currentUser.isAnonymous) {
       Alert.alert(
@@ -78,11 +82,15 @@ export default class Profile extends Component {
           {
             text: "Link phone number",
             onPress: () => this.props.navigation.navigate("LoginPhone")
+          },
+          {
+            text: "Cancel"
           }
         ],
         { cancelable: true }
       );
     } else {
+      
       firebase
         .auth()
         .signOut()
@@ -114,7 +122,6 @@ export default class Profile extends Component {
       user
         .updateProfile({ photoURL: avatarUri })
         .then(function(user) {
-
           self.setState({ currentUser: firebase.auth().currentUser });
           //return user.updateProfile({'displayName': this.state.name, "photoUrl": this.state.avatarUri});
         })
@@ -130,32 +137,31 @@ export default class Profile extends Component {
       <SafeAreaView
         style={{ flex: 1, position: "relative", backgroundColor: "#fff" }}
       >
-      <View style={styles.backButton}>
-                  <Icon
-                    type="ionicon"
-                    name="ios-arrow-back"
-                    color="#000"
-                    size={30}
-                    onPress={() => this.props.navigation.goBack()}
-                    containerStyle={styles.backIcon}
-                  />
+        <View style={styles.backButton}>
+          <Icon
+            type="ionicon"
+            name="ios-arrow-back"
+            color="#000"
+            size={30}
+            onPress={() => this.props.navigation.goBack()}
+            containerStyle={styles.backIcon}
+          />
 
-            {currentUser && currentUser.displayName && (
-                  <Text style={styles.userName}>{currentUser.displayName}</Text>
-                )}
-                </View>
+          {currentUser &&
+            currentUser.displayName && (
+              <Text style={styles.userName}>{currentUser.displayName}</Text>
+            )}
+        </View>
 
         {currentUser && (
           <View
             style={{
-              zIndex: 999,
+              zIndex: 9,
               height: "90%",
               flexDirection: "column",
               borderRadius: 4
             }}
           >
-     
-
             <View style={{ alignItems: "center" }}>
               <View style={{ position: "relative" }}>
                 <Avatar
@@ -178,7 +184,9 @@ export default class Profile extends Component {
                       Orientation.unlockAllOrientations();
 
                       this.props.navigation.navigate("UpdateAvatar", {
-                        returnData: this.returnData.bind(this)
+                        returnData: this.returnData.bind(this),
+                        storagePath: `users`
+
                       });
                     }}
                     style={{
@@ -208,18 +216,41 @@ export default class Profile extends Component {
                 </View>
               </View>
             </View>
-            <View style={{ marginTop: 20 }}>
+            <View style={{ flex: 1, marginTop: 20 }}>
+              {currentUser.phoneNumber && (
+                <ListItem
+                  containerStyle={styles.detailItem}
+                  title={
+                    <View>
+                      <Text style={styles.detailLabel}>Linked phone: </Text>
+                      <Text style={styles.detail}>
+                        {currentUser.phoneNumber}
+                      </Text>
+                    </View>
+                  }
+                />
+              )}
               <ListItem
-                containerStyle={styles.settingsItem}
+                containerStyle={styles.detailItem}
+                onPress={() => this.props.navigation.navigate("PrivacyPolicy")}
                 title={
                   <View>
                     <Text style={styles.settingsActions}>Privacy Policy</Text>
                   </View>
                 }
               />
+              <ListItem
+                containerStyle={styles.detailItem}
+                onPress={() => Linking.openURL('mailto:support@wedcast.app')}
+                title={
+                  <View>
+                    <Text style={styles.settingsActions}>Support</Text>
+                  </View>
+                }
+              />
               {this.state.currentUser.isAnonymous && (
                 <ListItem
-                  containerStyle={styles.settingsItem}
+                  containerStyle={styles.detailItem}
                   onPress={() => this.props.navigation.navigate("LoginPhone")}
                   title={
                     <View>
@@ -231,9 +262,14 @@ export default class Profile extends Component {
                 />
               )}
             </View>
-            <TouchableOpacity onPress={this.logout} style={styles.logoutButton}>
-              <Text style={styles.logoutButtonText}> Log Out </Text>
-            </TouchableOpacity>
+            <View style={styles.logoutWrapper}>
+              <TouchableOpacity
+                onPress={this.logout}
+                style={styles.logoutButton}
+              >
+                <Text style={styles.logoutButtonText}> Log Out </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </SafeAreaView>
@@ -258,33 +294,36 @@ const styles = EStyleSheet.create({
   detail: {
     fontSize: 16
   },
+  logoutWrapper: {
+    alignItems: "center"
+  },
   logoutButton: {
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#d93636",
     borderRadius: 4,
-    padding: 10,
-    marginTop: "auto"
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    margin: "auto"
   },
   logoutButtonText: {
     color: "#fff",
     fontFamily: "Quicksand",
-    fontSize: "15rem"
+    fontSize: "20rem"
   },
   backButton: {
     justifyContent: "center",
     alignSelf: "center",
     paddingVertical: 10,
     flexDirection: "row",
-    flexWrap: 'nowrap',
-    position: 'relative',
-    width: '100%',
+    flexWrap: "nowrap",
+    position: "relative",
+    width: "100%"
   },
-  backIcon:{
-    position: 'absolute',
+  backIcon: {
+    position: "absolute",
     left: 10,
     top: 10
-
   },
   userName: {
     fontSize: 24,
@@ -292,4 +331,18 @@ const styles = EStyleSheet.create({
     fontFamily: "Quicksand",
     textAlign: "center"
   },
+  detailItem: {
+    borderBottomWidth: 0.5,
+    borderColor: "#999999"
+  },
+  detailLabel: {
+    color: "#999999",
+    fontSize: 16,
+    marginBottom: 4,
+    fontFamily: "Quicksand"
+  },
+  detail: {
+    fontSize: 16,
+    fontFamily: "Quicksand"
+  }
 });

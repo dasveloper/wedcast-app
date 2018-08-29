@@ -48,99 +48,102 @@ export default class LoginName extends React.Component {
   }
   linkPhone = () => {
     let self = this;
-    if (!this.phone.isValidNumber()){
-      this.setState({errorMessage: "Invalid phone number"});
+    if (!this.phone.isValidNumber()) {
+      this.setState({ errorMessage: "Invalid phone number" });
       return;
     }
 
+    firebase
+      .auth()
+      .verifyPhoneNumber(self.state.phoneNumber)
+      .on(
+        "state_changed",
+        phoneAuthSnapshot => {
+          // How you handle these state events is entirely up to your ui flow and whether
+          // you need to support both ios and android. In short: not all of them need to
+          // be handled - it's entirely up to you, your ui and supported platforms.
 
+          // E.g you could handle android specific events only here, and let the rest fall back
+          // to the optionalErrorCb or optionalCompleteCb functions
+          switch (phoneAuthSnapshot.state) {
+            // ------------------------
+            //  IOS AND ANDROID EVENTS
+            // ------------------------
+            case firebase.auth.PhoneAuthState.CODE_SENT: // or 'sent'
+              // on ios this is the final phone auth state event you'd receive
+              // so you'd then ask for user input of the code and build a credential from it
+              // as demonstrated in the `signInWithPhoneNumber` example above
+              break;
+            case firebase.auth.PhoneAuthState.ERROR: // or 'error'
+              // alert('verification error');
+              // alert(phoneAuthSnapshot.error);
+              break;
 
+            // ---------------------
+            // ANDROID ONLY EVENTS
+            // ---------------------
+            case firebase.auth.PhoneAuthState.AUTO_VERIFY_TIMEOUT: // or 'timeout'
+              console.log("auto verify on android timed out");
+              // alert('no auto, show verification');
 
-    firebase.auth()
-    .verifyPhoneNumber(self.state.phoneNumber)
-    .on('state_changed', (phoneAuthSnapshot) => {
-      // How you handle these state events is entirely up to your ui flow and whether
-      // you need to support both ios and android. In short: not all of them need to
-      // be handled - it's entirely up to you, your ui and supported platforms.
-  
-      // E.g you could handle android specific events only here, and let the rest fall back
-      // to the optionalErrorCb or optionalCompleteCb functions
-      switch (phoneAuthSnapshot.state) {
-        // ------------------------
-        //  IOS AND ANDROID EVENTS
-        // ------------------------
-        case firebase.auth.PhoneAuthState.CODE_SENT: // or 'sent'
-   
-          // on ios this is the final phone auth state event you'd receive
-          // so you'd then ask for user input of the code and build a credential from it
-          // as demonstrated in the `signInWithPhoneNumber` example above
-          break;
-        case firebase.auth.PhoneAuthState.ERROR: // or 'error'
-          alert('verification error');
-          alert(phoneAuthSnapshot.error);
-          break;
-  
-        // ---------------------
-        // ANDROID ONLY EVENTS
-        // ---------------------
-        case firebase.auth.PhoneAuthState.AUTO_VERIFY_TIMEOUT: // or 'timeout'
-          console.log('auto verify on android timed out');
-          alert('no auto, show verification');
+              // proceed with your manual code input flow, same as you would do in
+              // CODE_SENT if you were on IOS
+              break;
+            case firebase.auth.PhoneAuthState.AUTO_VERIFIED: // or 'verified'
+              // auto verified means the code has also been automatically confirmed as correct/received
+              // phoneAuthSnapshot.code will contain the auto verified sms code - no need to ask the user for input.
+              //  alert('auto verified on android');
+              console.log(phoneAuthSnapshot);
+              // Example usage if handling here and not in optionalCompleteCb:
+              // const { verificationId, code } = phoneAuthSnapshot;
+              // const credential = firebase.auth.PhoneAuthProvider.credential(verificationId, code);
 
-          // proceed with your manual code input flow, same as you would do in
-          // CODE_SENT if you were on IOS
-          break;
-        case firebase.auth.PhoneAuthState.AUTO_VERIFIED: // or 'verified'
-          // auto verified means the code has also been automatically confirmed as correct/received
-          // phoneAuthSnapshot.code will contain the auto verified sms code - no need to ask the user for input.
-          alert('auto verified on android');
-          console.log(phoneAuthSnapshot);
-          // Example usage if handling here and not in optionalCompleteCb:
-          // const { verificationId, code } = phoneAuthSnapshot;
-          // const credential = firebase.auth.PhoneAuthProvider.credential(verificationId, code);
-  
-          // Do something with your new credential, e.g.:
-          // firebase.auth().signInWithCredential(credential);
-          // firebase.auth().currentUser.linkWithCredential(credential);
-          // etc ...
-          break;
-      }
-    }, (error) => {
-      // optionalErrorCb would be same logic as the ERROR case above,  if you've already handed
-      // the ERROR case in the above observer then there's no need to handle it here
-      Alert.alert(
-        "Something went wrong",
-        error.nativeErrorMessage,
-        [
-          {
-            text: "OK"
+              // Do something with your new credential, e.g.:
+              // firebase.auth().signInWithCredential(credential);
+              // firebase.auth().currentUser.linkWithCredential(credential);
+              // etc ...
+              break;
           }
-        ],
-        { cancelable: false }
-      );
-    }, (phoneAuthSnapshot) => {
-      // optionalCompleteCb would be same logic as the AUTO_VERIFIED/CODE_SENT switch cases above
-      // depending on the platform. If you've already handled those cases in the observer then
-      // there's absolutely no need to handle it here.
-  
-      // Platform specific logic:
-      // - if this is on IOS then phoneAuthSnapshot.code will always be null
-      // - if ANDROID auto verified the sms code then phoneAuthSnapshot.code will contain the verified sms code
-      //   and there'd be no need to ask for user input of the code - proceed to credential creating logic
-      // - if ANDROID auto verify timed out then phoneAuthSnapshot.code would be null, just like ios, you'd
-      //   continue with user input logic.
+        },
+        error => {
+          // optionalErrorCb would be same logic as the ERROR case above,  if you've already handed
+          // the ERROR case in the above observer then there's no need to handle it here
+          Alert.alert(
+            "Something went wrong",
+            error.nativeErrorMessage,
+            [
+              {
+                text: "OK"
+              }
+            ],
+            { cancelable: false }
+          );
+        },
+        phoneAuthSnapshot => {
+          // optionalCompleteCb would be same logic as the AUTO_VERIFIED/CODE_SENT switch cases above
+          // depending on the platform. If you've already handled those cases in the observer then
+          // there's absolutely no need to handle it here.
 
-      self.setState({
-        confirmResult: phoneAuthSnapshot,
-        phoneSubmitted: true
-      });
-      console.log(phoneAuthSnapshot);
-    });
+          // Platform specific logic:
+          // - if this is on IOS then phoneAuthSnapshot.code will always be null
+          // - if ANDROID auto verified the sms code then phoneAuthSnapshot.code will contain the verified sms code
+          //   and there'd be no need to ask for user input of the code - proceed to credential creating logic
+          // - if ANDROID auto verify timed out then phoneAuthSnapshot.code would be null, just like ios, you'd
+          //   continue with user input logic.
+
+          self.setState({
+            confirmResult: phoneAuthSnapshot,
+            phoneSubmitted: true
+          });
+          console.log(phoneAuthSnapshot);
+        }
+      );
   };
   confirmLinkAccount = () => {
     const { verificationCode, confirmResult } = this.state;
     const { verificationId, code } = confirmResult;
     let self = this;
+    firebase.analytics().logEvent("link_phone_account");
 
     if (confirmResult && verificationCode.length) {
       const credential = firebase.auth.PhoneAuthProvider.credential(
@@ -166,20 +169,7 @@ export default class LoginName extends React.Component {
           );
         })
         .catch(function(error) {
-          if (error.userInfo.error_name == "ERROR_INVALID_VERIFICATION_CODE") {
-            Alert.alert(
-              "Incorrect validation code",
-              "Please try again",
-              [
-                {
-                  text: "OK"
-                }
-              ],
-              { cancelable: true }
-            );
-          } else if (
-            error.userInfo.error_name == "ERROR_PROVIDER_ALREADY_LINKED"
-          ) {
+          if (error.code == "provider-already-linked") {
             Alert.alert(
               `Your account is already linked to a different phone number`,
               `You cannot link your account to more than one phone number`,
@@ -190,9 +180,7 @@ export default class LoginName extends React.Component {
               ],
               { cancelable: true }
             );
-          } else if (
-            error.userInfo.error_name == "ERROR_CREDENTIAL_ALREADY_IN_USE"
-          ) {
+          } else if (error.code == "auth/credential-already-in-use") {
             Alert.alert(
               `An account is already linked to ${self.state.phoneNumber}`,
               `Please try a different number or sign in to your linked account`,
@@ -214,7 +202,19 @@ export default class LoginName extends React.Component {
               { cancelable: true }
             );
           } else {
-            alert(JSON.stringify(error.userInfo.error_name));
+
+              Alert.alert(
+                "Incorrect validation code",
+                "Please try again",
+                [
+                  {
+                    text: "OK"
+                  }
+                ],
+                { cancelable: true }
+              );
+            
+            // alert(JSON.stringify(error.userInfo.error_name));
           }
           // alert("Incorrect validation code, please try again.");
           // User couldn't sign in (bad verification code?)
@@ -230,9 +230,11 @@ export default class LoginName extends React.Component {
     }
   };
   goToVerification = () => {
+    firebase.analytics().logEvent("verification_sent");
+
     self = this;
-    if (!this.phone.isValidNumber()){
-      this.setState({errorMessage: "Invalid phone number"});
+    if (!this.phone.isValidNumber()) {
+      this.setState({ errorMessage: "Invalid phone number" });
       return;
     }
 
@@ -250,23 +252,23 @@ export default class LoginName extends React.Component {
       .catch(error => function() {});
   };
   confirmVerification = () => {
+    firebase.analytics().logEvent("confirm_verification");
+
     let self = this;
     const { verificationCode, confirmResult } = this.state;
- 
+
     if (confirmResult && verificationCode.length) {
-      confirmResult
-        .confirm(verificationCode)
-        .then(user => {
-          if (user.displayName != null) {
-            self.props.navigation.navigate("Menu", {
-              currentUser: user,
-              newUser: false
-            });
-          } else {
-            self.props.navigation.navigate("LoginName", { currentUser: user });
-          }
-        })
-        .catch(error => alert(JSON.stringify(error)));
+      confirmResult.confirm(verificationCode).then(user => {
+        if (user.displayName != null) {
+          self.props.navigation.navigate("Menu", {
+            currentUser: user,
+            newUser: false
+          });
+        } else {
+          self.props.navigation.navigate("LoginName", { currentUser: user });
+        }
+      });
+      //.catch(error => alert(JSON.stringify(error)));
     }
   };
   handleLogin = () => {
@@ -281,6 +283,8 @@ export default class LoginName extends React.Component {
         // ...
       })
       .then(function(user) {
+        firebase.analytics().logEvent("success_login_with_phone");
+
         self.props.navigation.navigate("LoginAvatar");
       })
       .catch(function(error) {});
@@ -304,6 +308,7 @@ export default class LoginName extends React.Component {
   };
 
   componentDidMount = () => {
+    firebase.analytics().setCurrentScreen("loginphone");
     var user = firebase.auth().currentUser;
 
     if (user != null) {
@@ -385,7 +390,7 @@ export default class LoginName extends React.Component {
                     {!currentUser
                       ? "Please login with your recovery phone number"
                       : "We'll link your account to your phone number so you can log in again later."}
-                  </Text>{" "}
+                  </Text>
                 </View>
               )}
               {phoneSubmitted && (
@@ -453,34 +458,51 @@ export default class LoginName extends React.Component {
               }}
             >
               {this.state.errorMessage && (
-                <Text style={{ color: "red", textAlign: 'center', marginVertical: 10 }}>{this.state.errorMessage}</Text>
+                <Text
+                  style={{
+                    color: "red",
+                    textAlign: "center",
+                    marginVertical: 10
+                  }}
+                >
+                  {this.state.errorMessage}
+                </Text>
               )}
 
               {!phoneSubmitted && (
                 <PhoneInput
-                ref={(ref) => { this.phone = ref; }}
+                  ref={ref => {
+                    this.phone = ref;
+                  }}
                   style={{
                     backgroundColor: inputFocused
                       ? "rgba(255, 255, 255, 1)"
                       : "rgba(255, 255, 255, 0.3)",
-                    borderRadius: 5,
-                    padding: 10,
-                    alignSelf: "center",
                     marginBottom: 20,
+                    paddingHorizontal: 10,
+                    alignSelf: "center",
+
                     borderBottomWidth: 0,
-                    width: "90%",
+                    width: "90%"
+                  }}
+                  textStyle={{
                     fontSize: 24,
-                    height: 60
+                    height: 60,
+
+                    fontSize: 24,
+                    fontFamily: "Quicksand"
                   }}
                   onFocus={() => this.setState({ inputFocused: true })}
                   onBlur={() => this.setState({ inputFocused: false })}
                   blurOnSubmit={false}
                   value={phoneNumber}
                   autoFocus={true}
-                                      keyboardType="phone-pad"
-                    autoCapitalize="none"
-                    textContentType="telephoneNumber"
-                    onChangePhoneNumber={phoneNumber => this.setState({ errorMessage: null, phoneNumber })}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  textContentType="telephoneNumber"
+                  onChangePhoneNumber={phoneNumber =>
+                    this.setState({ errorMessage: null, phoneNumber })
+                  }
                 />
 
                 // <TextInputMask

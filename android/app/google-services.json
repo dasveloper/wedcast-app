@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "408124275529-8ogujda35k4osqtgdgj6g3obik4b6pud.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wedcast",
+            "certificate_hash": "3d6d5a47233dea4deb6adedcb900eaaecf43849d"
+          }
+        },
+        {
           "client_id": "408124275529-hr1s6k53iklc1dle3r9do4o4sucpuao5.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -29,8 +37,20 @@
           "status": 1
         },
         "appinvite_service": {
-          "status": 1,
-          "other_platform_oauth_client": []
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "408124275529-hr1s6k53iklc1dle3r9do4o4sucpuao5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "408124275529-qvedomppqiaktp4bfn1rrkc2d400bv71.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wedcast.wedcast"
+              }
+            }
+          ]
         },
         "ads_service": {
           "status": 2

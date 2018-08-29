@@ -5,7 +5,9 @@
  */
 import Orientation from "react-native-orientation-locker";
 import Permissions from "react-native-permissions";
-import Spinner from 'react-native-loading-spinner-overlay';
+import Spinner from "react-native-loading-spinner-overlay";
+import ViewShot from "react-native-view-shot";
+import Gestures from "react-native-easy-gestures";
 
 import React, { Component } from "react";
 import {
@@ -20,9 +22,10 @@ import {
   CameraRoll,
   AppState,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  ScrollView
 } from "react-native";
-import { Icon, Button } from "react-native-elements";
+import { Icon, Button, Overlay } from "react-native-elements";
 
 import RNFetchBlob from "react-native-fetch-blob";
 
@@ -39,9 +42,9 @@ export default class CameraComponent extends Component {
     this.state = {
       flashOn: false,
       imageTaken: false,
-      downloading: false,
       savingPhoto: false,
-      cameraModeBack: true,
+      showOverlay: false,
+      cameraModeBack: this.props.cameraModeBack,
       currentUser: currentUser,
       windowWidth: dimensions.width,
       windowHeight: dimensions.height,
@@ -50,7 +53,11 @@ export default class CameraComponent extends Component {
       AppState: null,
       cameraPermission: null,
       downloadPermission: null,
-      overlayText: ''
+      overlayText: "",
+      showCameraPermissionOverlay: false,
+      showDownloadPermissionOverlay: false,
+      stickerMenuVisible: false,
+      stickerList: []
     };
   }
   goToFeed = () => {
@@ -63,10 +70,10 @@ export default class CameraComponent extends Component {
   };
   navigateBack = () => {
     Orientation.lockToPortrait();
-    if (this.props.returnPage){
-        this.props.navigation.navigate(this.props.returnPage);
-    } else{
-        this.props.navigation.goBack();
+    if (this.props.returnPage) {
+      this.props.navigation.navigate(this.props.returnPage);
+    } else {
+      this.props.navigation.goBack();
     }
   };
 
@@ -80,24 +87,57 @@ export default class CameraComponent extends Component {
       }
     });
   }
+  requestDownloadPermission = () => {
+    firebase.analytics().logEvent("camera_request_download_permission");
+
+    Permissions.request("photo").then(response => {
+      // Returns once the user has chosen to 'allow' or to 'not allow' access
+      // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+      this.setState({
+        downloadPermission: response,
+        showDownloadPermissionOverlay: false
+      });
+    });
+  };
+  alertForDownloadPermission() {
+    this.setState({ showDownloadPermissionOverlay: true });
+
+    // Alert.alert(
+    //   'Can we access your photo library?',
+    //   'We need access so you can download photos',
+    //   [
+    //     {
+    //       text: 'No',
+    //       onPress: () => console.log('Permission denied'),
+    //       style: 'cancel',
+    //     },
+    //     this.state.downloadPermission == 'undetermined'
+    //       ? { text: 'OK', onPress: this.requestDownloadPermission }
+    //       : { text: 'Open Settings', onPress: Permissions.openSettings },
+    //   ],
+    // )
+  }
   alertForPhotosPermission() {
-    Alert.alert(
-      "Can we access your photos?",
-      "We need access so you can set your profile pic",
-      [
-        {
-          text: "No",
-          onPress: () => console.log("Permission denied"),
-          style: "cancel"
-        },
-        this.state.cameraPermission == "undetermined"
-          ? { text: "OK", onPress: this.requestPermission }
-          : { text: "Open Settings", onPress: Permissions.openSettings }
-      ]
-    );
+    this.setState({ showCameraPermissionOverlay: true });
+    // Alert.alert(
+    //   "Can we access your photos?",
+    //   "We need access so you can set your profile pic",
+    //   [
+    //     {
+    //       text: "No",
+    //       onPress: () => console.log("Permission denied"),
+    //       style: "cancel"
+    //     },
+    //     this.state.cameraPermission == "undetermined"
+    //       ? { text: "OK", onPress: this.requestPermission }
+    //       : { text: "Open Settings", onPress: Permissions.openSettings }
+    //   ]
+    // );
   }
 
   takePicture() {
+    firebase.analytics().logEvent("take_picture");
+
     let self = this;
     const options = {
       forceUpOrientation: true,
@@ -122,20 +162,28 @@ export default class CameraComponent extends Component {
     this.setState({
       imagePreview: null,
       imageTaken: false,
-      savingPhoto: false
+      savingPhoto: false,
+      showOverlay: false,
+      stickerList: []
     });
     Orientation.unlockAllOrientations();
-
   }
   requestPermission = () => {
+    firebase.analytics().logEvent("camera_request_camera_permission");
+
     Permissions.request("camera").then(response => {
       // Returns once the user has chosen to 'allow' or to 'not allow' access
       // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
-      this.setState({ cameraPermission: response });
+      this.setState({
+        cameraPermission: response,
+        showCameraPermissionOverlay: false
+      });
     });
   };
 
   saveToCameraRoll = async image => {
+    firebase.analytics().logEvent("camera_save_image");
+
     const { imagePreview } = this.state;
     let self = this;
     if (Platform.OS === "android") {
@@ -154,8 +202,49 @@ export default class CameraComponent extends Component {
     }
   };
   returnImage(imagePreview) {
-    this.setState({savingPhoto: true, overlayText: "Saving image..."});
-    this.props.returnData(imagePreview);
+    this.setState({
+      savingPhoto: true,
+      showOverlay: true,
+      overlayText: "Uploading image..."
+    });
+    this.viewShot.capture().then(uri => {
+      console.log(uri);
+      this.props.returnData(uri);
+    });
+  }
+
+  addSticker(sticker) {
+    let stickerWrapper = (
+      <Gestures
+        scalable={{
+          min: 0.1,
+          max: 7
+        }}
+        styles={{
+          position: "absolute",
+          top: 40,
+          left: 40,
+          zIndex: 2
+        }}
+        onEnd={(event, styles) => {
+          console.log(styles);
+        }}
+      >
+        <Image
+          source={sticker}
+          style={{
+            width: 200,
+            resizeMode: "contain",
+            zIndex: 2
+          }}
+        />
+      </Gestures>
+    );
+
+    this.state.stickerList.push(stickerWrapper);
+    this.setState({
+      stickerList: this.state.stickerList
+    });
   }
   render() {
     const {
@@ -166,17 +255,27 @@ export default class CameraComponent extends Component {
       flashOn,
       windowHeight,
       windowWidth,
-      overlayText
+      overlayText,
+      cameraPermission,
+      showCameraPermissionOverlay,
+      showDownloadPermissionOverlay,
+      showOverlay
     } = this.state;
     let castId;
+    const stickerSource1 = require("./assets/stickers/sticker1.png");
+    const stickerSource2 = require("./assets/stickers/sticker2.png");
+    const stickers = [stickerSource1, stickerSource2];
 
     let feedName;
     if (this.props.feedName) {
       feedName = this.props.feedName;
     }
+    let Arr = this.state.stickerList.map((a, i) => {
+      return a;
+    });
     let imagePreviewPlaceholder = imageTaken ? (
-      <Image
-        source={{ uri: imagePreview }}
+      <ViewShot
+        ref={component => (this.viewShot = component)}
         style={{
           flex: 1,
           position: "absolute",
@@ -185,8 +284,23 @@ export default class CameraComponent extends Component {
           right: 0,
           bottom: 0
         }}
-      />
-    ) : (
+        options={{ format: "jpg", quality: 0.9 }}
+      >
+        {Arr}
+
+        <Image
+          source={{ uri: imagePreview }}
+          style={{
+            flex: 1,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          }}
+        />
+      </ViewShot>
+    ) : this.state.cameraPermission == "authorized" ? (
       <Camera
         ref={cam => {
           this.camera = cam;
@@ -197,7 +311,7 @@ export default class CameraComponent extends Component {
             ? Camera.constants.Type.back
             : Camera.constants.Type.front
         }
-        captureTarget={Camera.constants.CaptureTarget.disk}
+        captureTarget={Camera.constants.CaptureTarget.temp}
         flashMode={
           flashOn
             ? Camera.constants.FlashMode.on
@@ -205,67 +319,103 @@ export default class CameraComponent extends Component {
         }
         aspect={Camera.constants.Aspect.fill}
       />
+    ) : (
+      <View />
     );
+    let stickerMenu = stickers.map(sticker => {
+      return (
+        <TouchableOpacity
+          style={{
+            alignSelf: "center",
+            marginLeft: 10,
+            height: 100,
+            width: 100,
+            padding: 10,
+            borderRadius: 10,
+            backgroundColor: "rgba(255,255,255,.4)"
+          }}
+          onPress={() => this.addSticker(sticker)}
+        >
+          <Image
+            source={sticker}
+            style={{
+              height: "100%",
+              maxWidth: "100%",
+              resizeMode: "contain",
+              zIndex: 2
+            }}
+          />
+        </TouchableOpacity>
+      );
+    });
     let bottomMenu = (
-      <SafeAreaView
-        style={[
-          styles.bottomMenuWrapper,
-          {
-            justifyContent: this.props.showBottomNav
-              ? "space-between"
-              : "center"
-          }
-        ]}
-      >
-        <View style={styles.bottomMenu} />
-        {this.props.showBottomNav && (
-          <Icon
-            type="ionicon"
-            underlayColor="transparent"
-            name="ios-people"
-            color="#fff"
-            iconStyle={styles.navIcon}
-            size={40}
-            onPress={() => this.goToFeedUsers()}
-          />
-        )}
-        {imageTaken ? (
-          <Icon
-            type="ionicon"
-            name="md-checkmark"
-            color="#96c256"
-            iconStyle={styles.navIcon}
-            size={40}
-            reverse
-            loading
-            onPress={() => this.returnImage(imagePreview)}
-          />
+      <SafeAreaView style={styles.bottomMenuWrapper}>
+        {imageTaken && this.state.stickerMenuVisible ? (
+          <ScrollView horizontal={true}>{stickerMenu}</ScrollView>
         ) : (
-          <Icon
-            type="ionicon"
-            name="md-camera"
-            color="#1F9FAC"
-            iconStyle={styles.topNavIcon}
-            size={40}
-            reverse
-            onPress={() =>
-              this.state.cameraPermission === "authorized"
-                ? this.takePicture()
-                : this.alertForPhotosPermission()
+          undefined
+        )}
+        <View
+          style={[
+            styles.bottomMenuInner,
+            {
+              justifyContent: this.props.showBottomNav
+                ? "space-between"
+                : "center"
             }
-          />
-        )}
-        {this.props.showBottomNav && (
-          <Icon
-            type="ionicon"
-            underlayColor="transparent"
-            name="ios-images"
-            color="#fff"
-            iconStyle={styles.navIcon}
-            size={40}
-            onPress={() => this.goToFeed()}
-          />
-        )}
+          ]}
+        >
+          <View style={styles.bottomMenu} />
+          {this.props.showBottomNav && (
+            <Icon
+              type="ionicon"
+              underlayColor="transparent"
+              name="ios-people"
+              color="#fff"
+              iconStyle={styles.navIcon}
+              size={40}
+              onPress={() => this.goToFeedUsers()}
+            />
+          )}
+
+          {imageTaken ? (
+            <Icon
+              type="ionicon"
+              name="md-checkmark"
+              color="#96c256"
+              iconStyle={styles.navIcon}
+              size={40}
+              reverse
+              loading
+              onPress={() => this.returnImage(imagePreview)}
+            />
+          ) : (
+            <Icon
+              type="ionicon"
+              name="md-camera"
+              color="#1F9FAC"
+              iconStyle={styles.navIcon}
+              size={40}
+              reverse
+              onPress={() =>
+                this.state.cameraPermission === "authorized"
+                  ? this.takePicture()
+                  : this.alertForPhotosPermission()
+              }
+            />
+          )}
+          {this.props.showBottomNav && (
+            <Icon
+              type="ionicon"
+              underlayColor="transparent"
+              name="ios-images"
+              color="#fff"
+              iconStyle={styles.navIcon}
+              size={40}
+              onPress={() => this.goToFeed()}
+            />
+          )}
+        </View>
       </SafeAreaView>
     );
 
@@ -275,18 +425,24 @@ export default class CameraComponent extends Component {
           type="ionicon"
           name="md-close"
           color="white"
-          iconStyle={styles.topNavIcon}
           underlayColor="transparent"
           size={36}
           onPress={this.reset.bind(this)}
         />
-        {this.state.downloading && (
-          <ActivityIndicator size="small" color="#fff" />
-        )}
-        {!this.state.downloading && (
+       {false && <View
+          style={{
+            flexDirection: "column",
+            position: "absolute",
+            right: 0,
+            top: 0,
+            zIndex: 99,
+            padding: 10,
+
+          }}
+        >
           <Icon
-            type="ionicon"
-            name="ios-download-outline"
+            type="material-community"
+            name="download"
             color="white"
             iconStyle={styles.topNavIcon}
             underlayColor="transparent"
@@ -298,22 +454,48 @@ export default class CameraComponent extends Component {
                 if (response == "undetermined") {
                   this.alertForDownloadPermission();
                 } else if (response == "authorized") {
-                  this.setState({ downloading: true });
-                  this.saveToCameraRoll().then(() =>
-                    this.setState({ downloading: false })
-                  );
+                  this.setState({
+                    showOverlay: true,
+                    overlayText: "Downloading image..."
+                  });
+                  this.saveToCameraRoll().then(() => {
+                    setTimeout(
+                      function() {
+                        this.setState({ showOverlay: false, overlayText: "" });
+                      }.bind(this),
+                      1000
+                    );
+                  });
                 }
               });
             }}
           />
-        )}
+          <Icon
+            type="material-community"
+            name="sticker-emoji"
+            underlayColor="transparent"
+            color="#fff"
+            iconStyle={styles.topNavIcon}
+            size={36}
+            onPress={() => this.setState({stickerMenuVisible: !this.state.stickerMenuVisible})}
+          />
+          <Icon
+            type="material-community"
+            name="format-text"
+            underlayColor="transparent"
+            color="#fff"
+            iconStyle={styles.topNavIcon}
+            size={36}
+            onPress={() => this.goToFeedUsers()}
+          />
+        </View>}
       </View>
     ) : (
       <View style={styles.topMenu}>
         <View style={styles.feedMenu}>
           <Icon
             type="ionicon"
-            name="ios-menu-outline"
+            name="ios-arrow-back"
             iconStyle={styles.menuIcon}
             underlayColor="transparent"
             size={36}
@@ -354,10 +536,224 @@ export default class CameraComponent extends Component {
 
     return (
       <SafeAreaView style={styles.container}>
-        <Spinner visible={this.state.savingPhoto} textContent={overlayText} textStyle={{color: '#FFF'}} />
+        <Spinner
+          visible={this.state.showOverlay}
+          textContent={overlayText}
+          textStyle={{ color: "#FFF" }}
+        />
         {topMenu}
         {imagePreviewPlaceholder}
         {bottomMenu}
+        {this.props.showCircleOverlay && (
+          <View
+            style={[
+              styles.circleOverlay,
+              {
+                transform: [
+                  { translateX: -this.state.windowWidth / 2 },
+                  { translateY: -this.state.windowWidth / 2 }
+                ],
+                height: this.state.windowWidth,
+                width: this.state.windowWidth,
+                borderRadius: this.state.windowWidth / 2
+              }
+            ]}
+          />
+        )}
+
+        {showCameraPermissionOverlay && (
+          <Overlay
+            height={null}
+            containerStyle={{
+              zIndex: 99
+            }}
+            overlayStyle={{
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              flexDirection: "column"
+            }}
+            isVisible
+          >
+            <View
+              style={{
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10
+              }}
+            >
+              <Icon
+                type="ionicon"
+                name="ios-camera"
+                color="#1F9FAC"
+                size={60}
+              />
+              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
+                Camera access required
+              </Text>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#696969",
+                  marginVertical: 5,
+                  fontSize: 18,
+                  fontFamily: "Quicksand"
+                }}
+              >
+                You'll need to grant camera permissions to take pictures
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-evenly",
+                alignItems: "center",
+                padding: 10,
+                marginTop: 10
+              }}
+            >
+              <Button
+                title="Not now"
+                titleStyle={{
+                  color: "#1F9FAC",
+                  fontFamily: "Quicksand",
+                  fontSize: 20
+                }}
+                buttonStyle={{
+                  backgroundColor: "transparent",
+                  borderColor: "transparent",
+                  borderWidth: 0,
+                  borderRadius: 23,
+                  height: 46,
+                  paddingHorizontal: 10
+                }}
+                onPress={() => {
+                  this.setState({ showCameraPermissionOverlay: false });
+                }}
+              />
+              <Button
+                title="OK!"
+                titleStyle={{
+                  color: "#1F9FAC",
+                  fontFamily: "Quicksand",
+                  fontSize: 20
+                }}
+                buttonStyle={{
+                  backgroundColor: "transparent",
+                  borderColor: "transparent",
+                  borderWidth: 0,
+                  borderRadius: 23,
+                  height: 46,
+                  paddingHorizontal: 16,
+                  borderWidth: 2,
+                  borderColor: "#1F9FAC"
+                }}
+                onPress={() => {
+                  this.state.cameraPermission == "undetermined"
+                    ? this.requestPermission()
+                    : Permissions.openSettings();
+                }}
+              />
+            </View>
+          </Overlay>
+        )}
+        {showDownloadPermissionOverlay && (
+          <Overlay
+            height={null}
+            containerStyle={{
+              zIndex: 99
+            }}
+            overlayStyle={{
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              flexDirection: "column"
+            }}
+            isVisible
+          >
+            <View
+              style={{
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: 10
+              }}
+            >
+              <Icon
+                type="ionicon"
+                name="ios-download-outline"
+                color="#1F9FAC"
+                size={60}
+              />
+              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
+                Photo library access required
+              </Text>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#696969",
+                  marginVertical: 5,
+                  fontSize: 18,
+                  fontFamily: "Quicksand"
+                }}
+              >
+                You'll need to grant photo library permissions to download
+                pictures
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-evenly",
+                alignItems: "center",
+                padding: 10,
+                marginTop: 10
+              }}
+            >
+              <Button
+                title="Not now"
+                titleStyle={{
+                  color: "#1F9FAC",
+                  fontFamily: "Quicksand",
+                  fontSize: 20
+                }}
+                buttonStyle={{
+                  backgroundColor: "transparent",
+                  borderColor: "transparent",
+                  borderWidth: 0,
+                  borderRadius: 23,
+                  height: 46,
+                  paddingHorizontal: 10
+                }}
+                onPress={() => {
+                  this.setState({ showDownloadPermissionOverlay: false });
+                }}
+              />
+              <Button
+                title="OK!"
+                titleStyle={{
+                  color: "#1F9FAC",
+                  fontFamily: "Quicksand",
+                  fontSize: 20
+                }}
+                buttonStyle={{
+                  backgroundColor: "transparent",
+                  borderColor: "transparent",
+                  borderWidth: 0,
+                  borderRadius: 23,
+                  height: 46,
+                  paddingHorizontal: 16,
+                  borderWidth: 2,
+                  borderColor: "#1F9FAC"
+                }}
+                onPress={() => {
+                  this.state.downloadPermission == "undetermined"
+                    ? this.requestDownloadPermission()
+                    : Permissions.openSettings();
+                }}
+              />
+            </View>
+          </Overlay>
+        )}
       </SafeAreaView>
     );
   }
@@ -370,7 +766,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     justifyContent: "space-between"
   },
+  circleOverlay: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
 
+    borderColor: "#fff",
+    borderWidth: 5
+  },
   cam: {
     flex: 1,
     flexDirection: "column",
@@ -382,15 +785,20 @@ const styles = StyleSheet.create({
   },
   bottomMenuWrapper: {
     flex: 0,
-    paddingHorizontal: 5,
     transform: [{ translateY: 30 }],
     display: "flex",
-    alignItems: "center",
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: 99,
+    flexDirection: "column"
+  },
+  bottomMenuInner: {
+    flex: 0,
+    paddingHorizontal: 5,
+    display: "flex",
+    alignItems: "center",
     flexDirection: "row"
   },
   bottomMenu: {
@@ -460,5 +868,9 @@ const styles = StyleSheet.create({
   },
   navIcon: {
     marginHorizontal: 10
+  },
+  topNavIcon:{
+    marginBottom: 20
+
   }
 });

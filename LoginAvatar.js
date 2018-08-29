@@ -1,4 +1,5 @@
 import Orientation from "react-native-orientation-locker";
+import Spinner from "react-native-loading-spinner-overlay";
 
 import React from "react";
 import {
@@ -9,23 +10,19 @@ import {
   SafeAreaView
 } from "react-native";
 import firebase from "react-native-firebase";
-import {
-  Input,
-  Button,
-  Text,
-  Icon,
-  Avatar
-} from "react-native-elements";
+import { Input, Button, Text, Icon, Avatar } from "react-native-elements";
 
 export default class LoginAvatar extends React.Component {
   state = {
     userName: "",
     avatarUri: null,
     currentUser: null,
-    smallScreen: false
+    smallScreen: false,
+    showProfileOverlay: false
   };
 
   updateAvatar = () => {
+    firebase.analytics().setCurrentScreen("loginavatar");
     var self = this;
     var user = firebase.auth().currentUser;
 
@@ -68,6 +65,9 @@ export default class LoginAvatar extends React.Component {
         })
         .catch(function(error) {});
     } else {
+      this.setState({ showProfileOverlay: true });
+      firebase.analytics().logEvent("avatar_set");
+
       firebase
         .auth()
         .signInAnonymouslyAndRetrieveData()
@@ -77,7 +77,7 @@ export default class LoginAvatar extends React.Component {
           var errorMessage = error.message;
           // ...
         })
-        .then(function(user) {
+        .then(function() {
           var user = firebase.auth().currentUser;
 
           if (user != null) {
@@ -88,10 +88,23 @@ export default class LoginAvatar extends React.Component {
               })
               .then(function() {
                 //return user.updateProfile({'displayName': this.state.name, "photoUrl": this.state.avatarUri});
-                self.props.navigation.navigate("Menu", {
-                  currentUser: firebase.auth().currentUser,
-                  newUser: true
-                });
+                user = firebase.auth().currentUser;
+
+                firebase
+                  .database()
+                  .ref(`users/${user.uid}/profile`)
+                  .set(user, function(error) {
+                    // Callback comes here
+                    if (error) {
+                      //alert(error);
+                    } else {
+                      self.props.navigation.navigate("Menu", {
+                        currentUser: user,
+                        newUser: true
+                      });
+                    }
+                    self.setState({ showProfileOverlay: false });
+                  });
               })
               .catch(function(error) {});
           }
@@ -122,104 +135,111 @@ export default class LoginAvatar extends React.Component {
     const { inputFocused } = this.state;
 
     return (
-        <ImageBackground
-          resizeMode={"cover"} // or cover
-          style={styles.backgroundStyle} // must be passed from the parent, the number may vary depending upon your screen size
-          imageStyle={{ opacity: this.state.inputFocused ? 0.4 : 1 }}
-          source={
-            this.state.avatarUri
-              ? require("./assets/photo-blank-bg.jpg")
-              : require("./assets/photo-bg.jpg")
-          }
-        >
-          <SafeAreaView style={styles.container}>
-            <View style={{ flex: 1 }}>
-              <View
-                style={[
-                  {
-                    backgroundColor: this.state.inputFocused
-                      ? "rgba(255, 255, 255, 1)"
-                      : "rgba(255, 255, 255, .3)"
-                  },
-                  styles.buttonGroup
-                ]}
-              >
-                <View style={styles.backButton}>
-                  <Icon
-                    type="ionicon"
-                    name="ios-arrow-back"
-                    color="#000"
-                    size={30}
-                    onPress={() => this.props.navigation.goBack()}
-                    containerStyle={styles.backIcon}
-                    iconStyle={styles.navIcon}
-                  />
-
-                  <Text style={styles.loginHeader}>Add a profile picture</Text>
-                </View>
-                <Text style={styles.loginSubHeader}>
-                  This image will be displayed when you host or attend an event
-                </Text>
-              </View>
-            </View>
-
+      <ImageBackground
+        resizeMode={"cover"} // or cover
+        style={styles.backgroundStyle} // must be passed from the parent, the number may vary depending upon your screen size
+        imageStyle={{ opacity: this.state.inputFocused ? 0.4 : 1 }}
+        source={
+          this.state.avatarUri
+            ? require("./assets/photo-blank-bg.jpg")
+            : require("./assets/photo-bg.jpg")
+        }
+      >
+        <SafeAreaView style={styles.container}>
+          <Spinner
+            visible={this.state.showProfileOverlay}
+            textContent="Creating account..."
+            textStyle={{ color: "#FFF" }}
+          />
+          <View style={{ flex: 1 }}>
             <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center"
-              }}
+              style={[
+                {
+                  backgroundColor: this.state.inputFocused
+                    ? "rgba(255, 255, 255, 1)"
+                    : "rgba(255, 255, 255, .3)"
+                },
+                styles.buttonGroup
+              ]}
             >
-              {this.state.avatarUri && (
-                <Avatar
-                  size={this.state.smallScreen ? 150 : 300}
-                  rounded
-                  source={{ uri: this.state.avatarUri }}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    Orientation.unlockAllOrientations();
-
-                    this.props.navigation.navigate("UpdateAvatar", {
-                      returnData: this.returnData.bind(this)
-                    });
-                  }}
+              <View style={styles.backButton}>
+                <Icon
+                  type="ionicon"
+                  name="ios-arrow-back"
+                  color="#000"
+                  size={30}
+                  onPress={() => this.props.navigation.goBack()}
+                  containerStyle={styles.backIcon}
+                  iconStyle={styles.navIcon}
                 />
-              )}
+
+                <Text style={styles.loginHeader}>Add a profile picture</Text>
+              </View>
+              <Text style={styles.loginSubHeader}>
+                This image will be displayed when you host or attend an event
+              </Text>
             </View>
-            <View style={styles.inputWrapper}>
-              <Button
-                buttonStyle={{
-                  backgroundColor: "#1F9FAC",
-                  borderRadius: 5,
-                  height: 60,
-                  margin: 20
-                }}
-                titleStyle={{
-                  fontSize: 24,
-                  fontFamily: "Quicksand"
-                }}
-                title="Add a profile picture"
+          </View>
+
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
+            {this.state.avatarUri && (
+              <Avatar
+                size={this.state.smallScreen ? 150 : 300}
+                rounded
+                source={{ uri: this.state.avatarUri }}
+                activeOpacity={0.7}
                 onPress={() => {
                   Orientation.unlockAllOrientations();
 
                   this.props.navigation.navigate("UpdateAvatar", {
-                    returnData: this.returnData.bind(this)
+                    returnData: this.returnData.bind(this),
+                    storagePath: `users`
                   });
                 }}
               />
-            </View>
-            <View style={styles.loginButtonWrapper}>
-              <Button
-                buttonStyle={styles.loginButton}
-                titleStyle={styles.loginButtonTitle}
-                disabledStyle={styles.loginButtonDisabled}
-                disabled={!this.state.avatarUri}
-                title="Done"
-                onPress={this.handleLogin}
-              />
-            </View>
-          </SafeAreaView>
-        </ImageBackground>
+            )}
+          </View>
+          <View style={styles.inputWrapper}>
+            <Button
+              buttonStyle={{
+                backgroundColor: "#1F9FAC",
+                borderRadius: 5,
+                height: 60,
+                margin: 20
+              }}
+              titleStyle={{
+                fontSize: 24,
+                fontFamily: "Quicksand"
+              }}
+              title="Add a profile picture"
+              onPress={() => {
+                Orientation.unlockAllOrientations();
+
+                this.props.navigation.navigate("UpdateAvatar", {
+                  returnData: this.returnData.bind(this),
+                  storagePath: `users`
+                });
+              }}
+            />
+          </View>
+          <View style={styles.loginButtonWrapper}>
+            <Button
+              buttonStyle={styles.loginButton}
+              titleStyle={styles.loginButtonTitle}
+              disabledStyle={styles.loginButtonDisabled}
+              disabled={!this.state.avatarUri}
+              title="Done"
+              onPress={this.handleLogin}
+            />
+          </View>
+        </SafeAreaView>
+      </ImageBackground>
     );
   }
 }
@@ -244,15 +264,14 @@ const styles = StyleSheet.create({
     marginLeft: 15,
     padding: 0,
     flexDirection: "row",
-    flexWrap: 'nowrap',
-    position: 'relative',
-    width: '100%',
+    flexWrap: "nowrap",
+    position: "relative",
+    width: "100%",
     paddingBottom: 5
   },
-  backIcon:{
-    position: 'absolute',
+  backIcon: {
+    position: "absolute",
     left: 10
-
   },
   loginHeader: {
     fontSize: 24,
