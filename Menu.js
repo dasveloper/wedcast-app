@@ -138,21 +138,23 @@ export default class Menu extends Component {
 
           function(snapshotRef) {
             let cast = snapshotRef.val();
-            let wedList = self.state.myWeddings;
-            let newCast = true;
-            if (wedList) {
-              for (var i = 0; i < wedList.length; i++) {
-                if (wedList[i].castId === cast.castId) {
-                  wedList[i] = cast;
-                  newCast = false;
-                  break;
+            if (cast != null) {
+              let wedList = self.state.myWeddings;
+              let newCast = true;
+              if (wedList) {
+                for (var i = 0; i < wedList.length; i++) {
+                  if (wedList[i].castId === cast.castId) {
+                    wedList[i] = cast;
+                    newCast = false;
+                    break;
+                  }
                 }
               }
+              if (newCast) {
+                feeds.push(snapshotRef.val());
+              }
+              self.setState({ myWeddings: feeds });
             }
-            if (newCast) {
-              feeds.push(snapshotRef.val());
-            }
-            self.setState({ myWeddings: feeds });
           }
         );
     });
@@ -274,7 +276,7 @@ export default class Menu extends Component {
               name="user"
               underlayColor="transparent"
               iconStyle={styles.navIcon}
-              containerStyle={{marginTop: 5}}
+              containerStyle={{ marginTop: 5 }}
               color="#1F9FAC"
               size={42}
               onPress={() =>

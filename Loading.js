@@ -8,8 +8,9 @@ export default class Loading extends React.Component {
       this.props.navigation.navigate(user ? "Menu" : "Walkthrough", {
         currentUser: firebase.auth().currentUser
       });
-      unsubscribe();
+      if (      unsubscribe)       unsubscribe();
     });
+
   }
   render() {
     return (

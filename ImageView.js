@@ -6,6 +6,7 @@
 import Orientation from "react-native-orientation-locker";
 import Permissions from "react-native-permissions";
 import Spinner from "react-native-loading-spinner-overlay";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import React, { Component } from "react";
 import {
@@ -51,7 +52,7 @@ export default class ImageView extends Component {
     this.props.navigation.goBack();
   };
   requestDownloadPermission = () => {
-    firebase.analytics().logEvent("fullscreen_request_download_permission ");
+    firebase.analytics().logEvent("request_download_permission");
 
     Permissions.request("photo").then(response => {
       // Returns once the user has chosen to 'allow' or to 'not allow' access
@@ -102,8 +103,8 @@ export default class ImageView extends Component {
           />
 
           <Icon
-            type="ionicon"
-            name="ios-download-outline"
+                 type="material-community"
+                 name="download"
             color="#fff"
             underlayColor="transparent"
             style={styles.footerDownload}
@@ -145,7 +146,7 @@ export default class ImageView extends Component {
             resizeMode: "contain"
           }}
         />
-              {this.state.showDownloadPermissionOverlay && (
+       {this.state.showDownloadPermissionOverlay && (
           <Overlay
             height={null}
             containerStyle={{
@@ -172,18 +173,8 @@ export default class ImageView extends Component {
                 color="#1F9FAC"
                 size={60}
               />
-              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
-                Photo library access
-              </Text>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#696969",
-                  marginVertical: 5,
-                  fontSize: 18,
-                  fontFamily: "Quicksand"
-                }}
-              >
+              <Text style={styles.permissionTitle}>Photo library access</Text>
+              <Text style={styles.permissionSubtitle}>
                 You'll need to grant photo library permissions to download
                 pictures
               </Text>
@@ -199,48 +190,22 @@ export default class ImageView extends Component {
             >
               <Button
                 title="Not now"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 10
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButton}
                 onPress={() => {
                   this.setState({ showDownloadPermissionOverlay: false });
                 }}
               />
               <Button
                 title="OK!"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 16,
-                  borderWidth: 2,
-                  borderColor: "#1F9FAC"
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButtonBorder}
                 onPress={() => {
                   this.state.downloadPermission == "undetermined"
                     ? this.requestDownloadPermission()
                     : Permissions.openSettings();
                 }}
               />
-              />
-         
             </View>
           </Overlay>
         )}
@@ -253,14 +218,46 @@ export default class ImageView extends Component {
     );
   }
 }
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "column",
     backgroundColor: "#000",
     justifyContent: "space-between"
   },
-
+  permissionTitle: { fontSize: "20rem", fontFamily: "Quicksand" },
+  permissionSubtitle: {
+    textAlign: "center",
+    color: "#696969",
+    marginVertical: "5rem",
+    fontSize: "18rem",
+    fontFamily: "Quicksand"
+  },
+  permissionButtonText: {
+    color: "#1F9FAC",
+    fontFamily: "Quicksand",
+    fontSize: "20rem"
+  },
+  permissionButton: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "10rem",
+    elevation: 0
+  },
+  permissionButtonBorder: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "16rem",
+    borderWidth: 2,
+    borderColor: "#1F9FAC",
+    elevation: 0
+  },
   cam: {
     flex: 1,
     flexDirection: "column",

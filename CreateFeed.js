@@ -758,7 +758,6 @@ export default class App extends Component {
         .catch(function(error) {
           var errorCode = error.code;
           var errorMessage = error.message;
-          alert(JSON.stringify(error));
          // alert(`Sorry, #${castId} is taken. Please try a different #CastID`);
         });
     } else if (this.state.currentPage == 2) {

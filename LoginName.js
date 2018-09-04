@@ -1,5 +1,6 @@
 import React from "react";
 //import SplashScreen from "react-native-splash-screen";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import {
   StyleSheet,
@@ -159,7 +160,7 @@ export default class LoginName extends React.Component {
     );
   }
 }
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   kb: {
     flex: 1
   },
@@ -176,26 +177,25 @@ const styles = StyleSheet.create({
     color: "red"
   },
   loginHeader: {
-    fontSize: 24,
+    fontSize: "24rem",
     color: "#000",
     fontFamily: "Quicksand",
     textAlign: "center",
-    paddingBottom: 5
+    paddingBottom: "5rem"
   },
   loginSubHeader: {
     fontFamily: "Quicksand",
-    marginTop: 5,
     color: "#000",
-    marginHorizontal: 10,
-    fontSize: 18,
+    marginHorizontal: "10rem",
+    fontSize: "18rem",
     textAlign: "center"
   },
   returnUser: {
-    marginTop: 10
+    marginTop: "10rem"
   },
   returnUserText: {
     color: "#1D57AF",
-    fontSize: 14,
+    fontSize: "14rem",
     fontFamily: "Quicksand"
   },
   //Bottom input wrapper
@@ -207,13 +207,13 @@ const styles = StyleSheet.create({
   //Login Input
   loginInput: {
     borderRadius: 5,
-    padding: 10,
+    padding: "10rem",
     alignSelf: "center",
-    marginBottom: 20,
+    marginBottom: "20rem",
     borderBottomWidth: 0,
     width: "90%",
-    fontSize: 24,
-    height: 60
+    fontSize: "24rem",
+    height: "60rem"
   },
   //Login Button
   loginButtonWrapper: {
@@ -221,11 +221,11 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: "#6E8E13",
-    padding: 10,
+    padding: "5rem",
     borderRadius: 0
   },
   loginButtonTitle: {
-    fontSize: 30,
+    fontSize: "26rem",
     fontFamily: "Quicksand"
   },
   loginButtonDisabled: {
@@ -238,6 +238,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     alignSelf: "center",
-    paddingVertical: 15
+    paddingVertical: "10rem"
   },
 });

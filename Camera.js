@@ -8,6 +8,7 @@ import Permissions from "react-native-permissions";
 import Spinner from "react-native-loading-spinner-overlay";
 import ViewShot from "react-native-view-shot";
 import Gestures from "react-native-easy-gestures";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import React, { Component } from "react";
 import {
@@ -23,9 +24,11 @@ import {
   AppState,
   ActivityIndicator,
   SafeAreaView,
-  ScrollView
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard
 } from "react-native";
-import { Icon, Button, Overlay } from "react-native-elements";
+import { Icon, Button, Overlay, Input } from "react-native-elements";
 
 import RNFetchBlob from "react-native-fetch-blob";
 
@@ -57,7 +60,12 @@ export default class CameraComponent extends Component {
       showCameraPermissionOverlay: false,
       showDownloadPermissionOverlay: false,
       stickerMenuVisible: false,
-      stickerList: []
+      stickerList: [],
+      textTop: null,
+      textOverlayFocused: false,
+      textOverlayHeight: null,
+      userOverlayText: "",
+      showTextOverlay: false
     };
   }
   goToFeed = () => {
@@ -222,9 +230,11 @@ export default class CameraComponent extends Component {
         }}
         styles={{
           position: "absolute",
-          top: 40,
-          left: 40,
-          zIndex: 2
+          top: this.state.windowHeight / 2,
+
+          left: this.state.windowWidth / 2,
+
+          zIndex: 10
         }}
         onEnd={(event, styles) => {
           console.log(styles);
@@ -233,9 +243,9 @@ export default class CameraComponent extends Component {
         <Image
           source={sticker}
           style={{
-            width: 200,
+            width: 100,
             resizeMode: "contain",
-            zIndex: 2
+            zIndex: 10
           }}
         />
       </Gestures>
@@ -262,9 +272,51 @@ export default class CameraComponent extends Component {
       showOverlay
     } = this.state;
     let castId;
-    const stickerSource1 = require("./assets/stickers/sticker1.png");
-    const stickerSource2 = require("./assets/stickers/sticker2.png");
-    const stickers = [stickerSource1, stickerSource2];
+    const stickerSource1 = require("./assets/stickers/emoji/Emoji1.png");
+    const stickerSource3 = require("./assets/stickers/emoji/Emoji3.png");
+    const stickerSource4 = require("./assets/stickers/emoji/Emoji4.png");
+    const stickerSource5 = require("./assets/stickers/emoji/Emoji5.png");
+    const stickerSource6 = require("./assets/stickers/emoji/Emoji6.png");
+    const stickerSource7 = require("./assets/stickers/emoji/Emoji7.png");
+    const stickerSource8 = require("./assets/stickers/emoji/Emoji8.png");
+    const stickerSource9 = require("./assets/stickers/emoji/Emoji9.png");
+    const stickerSource10 = require("./assets/stickers/emoji/Emoji10.png");
+    const stickerSource11 = require("./assets/stickers/emoji/Emoji11.png");
+    const stickerSource12 = require("./assets/stickers/emoji/Emoji12.png");
+    const stickerSource13 = require("./assets/stickers/emoji/Emoji13.png");
+    const stickerSource14 = require("./assets/stickers/emoji/Emoji14.png");
+    const stickerSource15 = require("./assets/stickers/emoji/Emoji15.png");
+    const stickerSource16 = require("./assets/stickers/emoji/Emoji16.png");
+    const stickerSource17 = require("./assets/stickers/emoji/Emoji17.png");
+    const stickerSource18 = require("./assets/stickers/emoji/Emoji18.png");
+    const stickerSource19 = require("./assets/stickers/emoji/Emoji19.png");
+    const stickerSource20 = require("./assets/stickers/emoji/Emoji20.png");
+    const stickerSource21 = require("./assets/stickers/emoji/Emoji21.png");
+    const stickerSource22 = require("./assets/stickers/emoji/Emoji22.png");
+
+    const stickers = [
+      stickerSource1,
+      stickerSource3,
+      stickerSource4,
+      stickerSource5,
+      stickerSource6,
+      stickerSource7,
+      stickerSource8,
+      stickerSource9,
+      stickerSource10,
+      stickerSource11,
+      stickerSource12,
+      stickerSource13,
+      stickerSource14,
+      stickerSource15,
+      stickerSource16,
+      stickerSource17,
+      stickerSource18,
+      stickerSource19,
+      stickerSource20,
+      stickerSource21,
+      stickerSource22
+    ];
 
     let feedName;
     if (this.props.feedName) {
@@ -287,7 +339,76 @@ export default class CameraComponent extends Component {
         options={{ format: "jpg", quality: 0.9 }}
       >
         {Arr}
+        {this.state.textOverlayFocused &&
+          this.state.showTextOverlay && (
+            <TouchableOpacity
+              style={{
+                width: "100%",
+                height: "100%",
+                zIndex: 10,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                backgroundColor: "rgba(0,0,0,0.4)"
+              }}
+              onPress={() => {
+                this.setState({ textOverlayFocused: false });
+                this.userTextOverlay.blur();
+                if (this.state.userOverlayText.length == 0){
+                  this.setState({ showTextOverlay: false });
 
+                }
+              }}
+              accessible={false}
+            />
+          )}
+        {this.state.showTextOverlay && (
+          <Gestures
+            draggable={{
+              y: true,
+              x: false
+            }}
+            onStart={(event, styles) => {
+              this.setState({ textTop: styles.top });
+            }}
+            styles={{
+              position: "absolute",
+              top: this.state.windowHeight / 2,
+              left: 0,
+              zIndex: 10,
+              backgroundColor: "rgba(255,255,255,.6)",
+              width: "100%",
+              padding: 0
+            }}
+            onEnd={(event, styles) => {
+              if (styles.top == this.state.textTop) {
+                this.setState({ textOverlayFocused: true });
+                this.userTextOverlay.focus();
+              }
+            }}
+          >
+            <Input
+              onChangeText={text => {
+                this.setState({ userOverlayText: text });
+              }}
+              onContentSizeChange={event => {
+                this.setState({
+                  textOverlayHeight: event.nativeEvent.contentSize.height
+                });
+              }}
+              value={this.state.userOverlayText}
+              inputStyle={{
+                width: "100%",
+                height: Math.max(35, this.state.textOverlayHeight)
+              }}
+              multiline={true}
+              containerStyle={styles.textOverlayContainer}
+              inputContainerStyle={styles.textOverlay}
+              pointerEvents="none"
+              ref={component => (this.userTextOverlay = component)}
+            />
+          </Gestures>
+        )}
         <Image
           source={{ uri: imagePreview }}
           style={{
@@ -331,8 +452,7 @@ export default class CameraComponent extends Component {
             height: 100,
             width: 100,
             padding: 10,
-            borderRadius: 10,
-            backgroundColor: "rgba(255,255,255,.4)"
+            zIndex: 99
           }}
           onPress={() => this.addSticker(sticker)}
         >
@@ -351,7 +471,16 @@ export default class CameraComponent extends Component {
     let bottomMenu = (
       <SafeAreaView style={styles.bottomMenuWrapper}>
         {imageTaken && this.state.stickerMenuVisible ? (
-          <ScrollView horizontal={true}>{stickerMenu}</ScrollView>
+          <ScrollView
+            style={{
+              transform: [{ translateY: 25 }],
+              paddingBottom: 15,
+              backgroundColor: "rgba(255,255,255,.4)"
+            }}
+            horizontal={true}
+          >
+            {stickerMenu}
+          </ScrollView>
         ) : (
           undefined
         )}
@@ -387,7 +516,14 @@ export default class CameraComponent extends Component {
               size={40}
               reverse
               loading
-              onPress={() => this.returnImage(imagePreview)}
+              onPress={() => {
+                this.setState({ textOverlayFocused: false });
+                this.userTextOverlay.blur();
+                if (this.state.userOverlayText.length == 0){
+                  this.setState({ showTextOverlay: false });
+
+                }
+                this.returnImage(imagePreview)}}
             />
           ) : (
             <Icon
@@ -426,69 +562,9 @@ export default class CameraComponent extends Component {
           name="md-close"
           color="white"
           underlayColor="transparent"
-          size={36}
+          size={30}
           onPress={this.reset.bind(this)}
         />
-       {false && <View
-          style={{
-            flexDirection: "column",
-            position: "absolute",
-            right: 0,
-            top: 0,
-            zIndex: 99,
-            padding: 10,
-
-          }}
-        >
-          <Icon
-            type="material-community"
-            name="download"
-            color="white"
-            iconStyle={styles.topNavIcon}
-            underlayColor="transparent"
-            size={36}
-            onPress={() => {
-              Permissions.check("photo").then(response => {
-                // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
-                this.setState({ downloadPermission: response });
-                if (response == "undetermined") {
-                  this.alertForDownloadPermission();
-                } else if (response == "authorized") {
-                  this.setState({
-                    showOverlay: true,
-                    overlayText: "Downloading image..."
-                  });
-                  this.saveToCameraRoll().then(() => {
-                    setTimeout(
-                      function() {
-                        this.setState({ showOverlay: false, overlayText: "" });
-                      }.bind(this),
-                      1000
-                    );
-                  });
-                }
-              });
-            }}
-          />
-          <Icon
-            type="material-community"
-            name="sticker-emoji"
-            underlayColor="transparent"
-            color="#fff"
-            iconStyle={styles.topNavIcon}
-            size={36}
-            onPress={() => this.setState({stickerMenuVisible: !this.state.stickerMenuVisible})}
-          />
-          <Icon
-            type="material-community"
-            name="format-text"
-            underlayColor="transparent"
-            color="#fff"
-            iconStyle={styles.topNavIcon}
-            size={36}
-            onPress={() => this.goToFeedUsers()}
-          />
-        </View>}
       </View>
     ) : (
       <View style={styles.topMenu}>
@@ -498,42 +574,125 @@ export default class CameraComponent extends Component {
             name="ios-arrow-back"
             iconStyle={styles.menuIcon}
             underlayColor="transparent"
-            size={36}
+            size={30}
             onPress={() => this.navigateBack()}
           />
           <Text numberOfLines={1} style={styles.feedName}>
             {feedName}
           </Text>
         </View>
-        <View style={styles.cameraControls}>
-          <Icon
-            type="ionicon"
-            name={this.state.flashOn ? "ios-flash" : "ios-flash-outline"}
-            color="white"
-            underlayColor="transparent"
-            iconStyle={styles.flashIcon}
-            size={36}
-            onPress={() => this.setState({ flashOn: !this.state.flashOn })}
-          />
-          <Icon
-            type="ionicon"
-            name={
-              cameraModeBack
-                ? "ios-reverse-camera-outline"
-                : "ios-reverse-camera"
-            }
-            color="white"
-            iconStyle={styles.switchCameraIcon}
-            underlayColor="transparent"
-            size={36}
-            onPress={() =>
-              this.setState({ cameraModeBack: !this.state.cameraModeBack })
-            }
-          />
-        </View>
       </View>
     );
-
+    let stickerIconMenu = imageTaken ? (
+      <View
+        style={{
+          flexDirection: "column",
+          position: "absolute",
+          justifyContent: "center",
+          alignItems: "center",
+          right: 0,
+          top: 0,
+          zIndex: 99,
+          padding: 10
+        }}
+      >
+        <Icon
+          type="material-community"
+          name="download"
+          color="white"
+          iconStyle={styles.topNavIcon}
+          underlayColor="transparent"
+          size={30}
+          onPress={() => {
+            Permissions.check("photo").then(response => {
+              // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+              this.setState({ downloadPermission: response });
+              if (response == "undetermined") {
+                this.alertForDownloadPermission();
+              } else if (response == "authorized") {
+                this.setState({
+                  showOverlay: true,
+                  overlayText: "Downloading image..."
+                });
+                this.saveToCameraRoll().then(() => {
+                  setTimeout(
+                    function() {
+                      this.setState({ showOverlay: false, overlayText: "" });
+                    }.bind(this),
+                    1000
+                  );
+                });
+              }
+            });
+          }}
+        />
+        <Icon
+          type="material-community"
+          name="sticker-emoji"
+          underlayColor="transparent"
+          color="#fff"
+          iconStyle={styles.topNavIcon}
+          size={30}
+          onPress={() =>
+            this.setState({
+              stickerMenuVisible: !this.state.stickerMenuVisible
+            })
+          }
+        />
+        <Icon
+          type="material-community"
+          name="format-text"
+          underlayColor="transparent"
+          color="#fff"
+          iconStyle={styles.topNavIcon}
+          size={30}
+          onPress={() => {
+            this.setState({
+              textOverlayFocused: true,
+              showTextOverlay: !this.state.showTextOverlay,
+              overlayText: ''
+            }, function() {
+              if (this.userTextOverlay) this.userTextOverlay.focus()
+            });
+            //this.userTextOverlay.focus();
+          }}
+        />
+      </View>
+    ) : (
+      <View
+        style={{
+          flexDirection: "column",
+          position: "absolute",
+          justifyContent: "center",
+          alignItems: "center",
+          right: 0,
+          top: 0,
+          zIndex: 99,
+          padding: 10
+        }}
+      >
+        <Icon
+          type="material-community"
+          name="camera-switch"
+          color="white"
+          iconStyle={styles.topNavIcon}
+          underlayColor="transparent"
+          size={30}
+          onPress={() =>
+            this.setState({ cameraModeBack: !this.state.cameraModeBack })
+          }
+        />
+        <Icon
+          type="material-community"
+          name={this.state.flashOn ? "flash" : "flash-off"}
+          color="white"
+          underlayColor="transparent"
+          iconStyle={styles.topNavIcon}
+          size={30}
+          onPress={() => this.setState({ flashOn: !this.state.flashOn })}
+        />
+      </View>
+    );
     return (
       <SafeAreaView style={styles.container}>
         <Spinner
@@ -542,10 +701,12 @@ export default class CameraComponent extends Component {
           textStyle={{ color: "#FFF" }}
         />
         {topMenu}
+        {stickerIconMenu}
         {imagePreviewPlaceholder}
         {bottomMenu}
         {this.props.showCircleOverlay && (
           <View
+            pointerEvents="none"
             style={[
               styles.circleOverlay,
               {
@@ -588,18 +749,8 @@ export default class CameraComponent extends Component {
                 color="#1F9FAC"
                 size={60}
               />
-              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
-                Camera access required
-              </Text>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#696969",
-                  marginVertical: 5,
-                  fontSize: 18,
-                  fontFamily: "Quicksand"
-                }}
-              >
+              <Text style={styles.permissionTitle}>Camera access</Text>
+              <Text style={styles.permissionSubtitle}>
                 You'll need to grant camera permissions to take pictures
               </Text>
             </View>
@@ -614,40 +765,16 @@ export default class CameraComponent extends Component {
             >
               <Button
                 title="Not now"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 10
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButton}
                 onPress={() => {
                   this.setState({ showCameraPermissionOverlay: false });
                 }}
               />
               <Button
                 title="OK!"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 16,
-                  borderWidth: 2,
-                  borderColor: "#1F9FAC"
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButtonBorder}
                 onPress={() => {
                   this.state.cameraPermission == "undetermined"
                     ? this.requestPermission()
@@ -684,18 +811,8 @@ export default class CameraComponent extends Component {
                 color="#1F9FAC"
                 size={60}
               />
-              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
-                Photo library access required
-              </Text>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#696969",
-                  marginVertical: 5,
-                  fontSize: 18,
-                  fontFamily: "Quicksand"
-                }}
-              >
+              <Text style={styles.permissionTitle}>Photo library access</Text>
+              <Text style={styles.permissionSubtitle}>
                 You'll need to grant photo library permissions to download
                 pictures
               </Text>
@@ -711,40 +828,16 @@ export default class CameraComponent extends Component {
             >
               <Button
                 title="Not now"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 10
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButton}
                 onPress={() => {
                   this.setState({ showDownloadPermissionOverlay: false });
                 }}
               />
               <Button
                 title="OK!"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 16,
-                  borderWidth: 2,
-                  borderColor: "#1F9FAC"
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButtonBorder}
                 onPress={() => {
                   this.state.downloadPermission == "undetermined"
                     ? this.requestDownloadPermission()
@@ -759,7 +852,7 @@ export default class CameraComponent extends Component {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "column",
@@ -770,10 +863,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: "50%",
     top: "50%",
-
+    zIndex: 1,
     borderColor: "#fff",
     borderWidth: 5
   },
+  textOverlayContainer: {
+    paddingVertical: 20,
+    width: "100%"
+  },
+  textOverlay: { borderBottomWidth: 0 },
   cam: {
     flex: 1,
     flexDirection: "column",
@@ -782,6 +880,39 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0
+  },
+  permissionTitle: { fontSize: "20rem", fontFamily: "Quicksand" },
+  permissionSubtitle: {
+    textAlign: "center",
+    color: "#696969",
+    marginVertical: "5rem",
+    fontSize: "18rem",
+    fontFamily: "Quicksand"
+  },
+  permissionButtonText: {
+    color: "#1F9FAC",
+    fontFamily: "Quicksand",
+    fontSize: "20rem"
+  },
+  permissionButton: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "10rem",
+    elevation: 0
+  },
+  permissionButtonBorder: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "16rem",
+    borderWidth: 2,
+    borderColor: "#1F9FAC",
+    elevation: 0
   },
   bottomMenuWrapper: {
     flex: 0,
@@ -855,7 +986,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   flashIcon: {
-    marginRight: 15
+    marginBottom: 20
   },
   captureButton: {
     width: 60,
@@ -869,8 +1000,7 @@ const styles = StyleSheet.create({
   navIcon: {
     marginHorizontal: 10
   },
-  topNavIcon:{
-    marginBottom: 20
-
+  topNavIcon: {
+    marginBottom: 10
   }
 });

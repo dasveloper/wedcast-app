@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import SplashScreen from "react-native-splash-screen";
 import firebase from "react-native-firebase";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import { Button, Text } from "react-native-elements";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View, BackHandler } from "react-native";
 import { IndicatorViewPager, PagerDotIndicator } from "rn-viewpager";
 
 export default class Walkthrough extends Component {
@@ -14,6 +15,7 @@ export default class Walkthrough extends Component {
       currentPage: 0
     };
   }
+
   componentDidMount() {
     firebase.analytics().setCurrentScreen("walkthrough");
     SplashScreen.hide();
@@ -24,7 +26,7 @@ export default class Walkthrough extends Component {
         <View style={styles.walkthoughPage}>
           <Image
             resizeMethod="resize"
-            source={require("./assets/walkthrough-phone.png")}
+            source={require("./assets/walkthrough-phone.jpg")}
             style={styles.walkthoughImage}
           />
         </View>
@@ -40,7 +42,7 @@ export default class Walkthrough extends Component {
         <View style={styles.walkthoughPage}>
           <Image
             resizeMethod="resize"
-            source={require("./assets/walkthrough-photos.png")}
+            source={require("./assets/walkthrough-photos.jpg")}
             style={styles.walkthoughImage}
           />
         </View>
@@ -54,7 +56,7 @@ export default class Walkthrough extends Component {
         <View style={styles.walkthoughPage}>
           <Image
             resizeMethod="resize"
-            source={require("./assets/walkthrough-projector.png")}
+            source={require("./assets/walkthrough-projector.jpg")}
             style={styles.walkthoughImage}
           />
         </View>
@@ -68,7 +70,7 @@ export default class Walkthrough extends Component {
         <View style={styles.walkthoughPage}>
           <Image
             resizeMethod="resize"
-            source={require("./assets/walkthrough-laptop.png")}
+            source={require("./assets/walkthrough-laptop.jpg")}
             style={styles.walkthoughImage}
           />
         </View>
@@ -143,7 +145,7 @@ export default class Walkthrough extends Component {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#B5FCF1"
@@ -170,29 +172,26 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 20
+    marginBottom: "20rem"
   },
   buttonGroup: {
     display: "flex",
-    paddingHorizontal: 20,
+    paddingHorizontal: "20rem",
     flexDirection: "row",
     alignItems: "center"
   },
-  skipButton: {
-    paddingHorizontal: 10,
-    borderRadius: 4
-  },
+
   skipTitle: {
     color: "#1F9FAC",
-    fontSize: 22,
+    fontSize: "22rem",
     fontFamily: "Quicksand"
   },
   walkthroughText: {
     fontFamily: "Quicksand",
-    padding: 30,
-    fontSize: 18,
+    padding: "26rem",
+    fontSize: "20rem",
     textAlign: "center",
-    marginBottom: 30
+    marginBottom:"30rem"
   },
   walkthoughImage: {
     width: "80%",

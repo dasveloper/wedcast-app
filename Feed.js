@@ -2,6 +2,7 @@ import Orientation from "react-native-orientation-locker";
 import Permissions from "react-native-permissions";
 import Spinner from "react-native-loading-spinner-overlay";
 import Feed from "./ImageFeed";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import Masonry from "react-native-masonry";
 import React, { Component } from "react";
@@ -128,7 +129,7 @@ export default class CreateFeed extends Component {
     firebase.analytics().logEvent("save_all");
 
     for (let image of this.state.downloadList) {
-      this.saveToCameraRoll(image);
+      this.saveToCameraRoll(image.image);
     }
     setTimeout(
       function() {
@@ -152,8 +153,7 @@ export default class CreateFeed extends Component {
     }).start();
   }
 
-  saveToCameraRoll = async image => {
-    
+  saveToCameraRoll = async image => {    
     if (Platform.OS === "android") {
       await RNFetchBlob.config({
         fileCache: true,
@@ -328,8 +328,8 @@ export default class CreateFeed extends Component {
         {isDownloading && <ActivityIndicator size="small" color="#000" />}
         {!isDownloading && (
           <Icon
-            type="ionicon"
-            name="ios-download-outline"
+          type="material-community"
+          name="download"
             color="#000"
             underlayColor="transparent"
             style={styles.footerDownload}
@@ -545,18 +545,8 @@ export default class CreateFeed extends Component {
                 color="#1F9FAC"
                 size={60}
               />
-              <Text style={{ fontSize: 20, fontFamily: "Quicksand" }}>
-                Photo library access
-              </Text>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: "#696969",
-                  marginVertical: 5,
-                  fontSize: 18,
-                  fontFamily: "Quicksand"
-                }}
-              >
+              <Text style={styles.permissionTitle}>Photo library access</Text>
+              <Text style={styles.permissionSubtitle}>
                 You'll need to grant photo library permissions to download
                 pictures
               </Text>
@@ -572,46 +562,21 @@ export default class CreateFeed extends Component {
             >
               <Button
                 title="Not now"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 10
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButton}
                 onPress={() => {
                   this.setState({ showDownloadPermissionOverlay: false });
                 }}
               />
               <Button
                 title="OK!"
-                titleStyle={{
-                  color: "#1F9FAC",
-                  fontFamily: "Quicksand",
-                  fontSize: 20
-                }}
-                buttonStyle={{
-                  backgroundColor: "transparent",
-                  borderColor: "transparent",
-                  borderWidth: 0,
-                  borderRadius: 23,
-                  height: 46,
-                  paddingHorizontal: 16,
-                  borderWidth: 2,
-                  borderColor: "#1F9FAC"
-                }}
+                titleStyle={styles.permissionButtonText}
+                buttonStyle={styles.permissionButtonBorder}
                 onPress={() => {
                   this.state.downloadPermission == "undetermined"
                     ? this.requestDownloadPermission()
                     : Permissions.openSettings();
                 }}
-              />
               />
             </View>
           </Overlay>
@@ -644,7 +609,7 @@ export default class CreateFeed extends Component {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#1F9FAC"
@@ -655,6 +620,39 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "left",
     fontWeight: "800"
+  },
+  permissionTitle: { fontSize: "20rem", fontFamily: "Quicksand" },
+  permissionSubtitle: {
+    textAlign: "center",
+    color: "#696969",
+    marginVertical: "5rem",
+    fontSize: "18rem",
+    fontFamily: "Quicksand"
+  },
+  permissionButtonText: {
+    color: "#1F9FAC",
+    fontFamily: "Quicksand",
+    fontSize: "20rem"
+  },
+  permissionButton: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "10rem",
+    elevation: 0
+  },
+  permissionButtonBorder: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderRadius: 23,
+    height: "46rem",
+    paddingHorizontal: "16rem",
+    borderWidth: 2,
+    borderColor: "#1F9FAC",
+    elevation: 0
   },
   imageFooter: {
     paddingVertical: 10,

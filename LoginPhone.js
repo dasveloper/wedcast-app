@@ -1,5 +1,6 @@
 import React from "react";
 import PhoneInput from "react-native-phone-input";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import {
   StyleSheet,
@@ -369,23 +370,13 @@ export default class LoginName extends React.Component {
                       iconStyle={styles.navIcon}
                     />
                     <Text
-                      style={{
-                        fontSize: 24,
-                        color: "#000",
-                        textAlign: "center"
-                      }}
+                      style={styles.loginHeader}
                     >
                       {!currentUser ? "Welcome back!" : "Link your account"}
                     </Text>
                   </View>
                   <Text
-                    style={{
-                      marginTop: 5,
-                      color: "#000",
-                      marginHorizontal: 10,
-                      fontSize: 18,
-                      textAlign: "center"
-                    }}
+                   style={styles.loginSubHeader}
                   >
                     {!currentUser
                       ? "Please login with your recovery phone number"
@@ -416,24 +407,15 @@ export default class LoginName extends React.Component {
                       iconStyle={styles.navIcon}
                     />
                     <Text
-                      style={{
-                        fontSize: 24,
-                        color: "#000",
-                        textAlign: "center"
-                      }}
+                                         style={styles.loginHeader}
+
                     >
                       We sent you a text
                     </Text>
                   </View>
 
                   <Text
-                    style={{
-                      marginTop: 5,
-                      color: "#000",
-                      marginHorizontal: 10,
-                      fontSize: 18,
-                      textAlign: "center"
-                    }}
+                    style={styles.loginSubHeader}
                   >
                     Enter the verification number you recieved
                   </Text>
@@ -571,18 +553,9 @@ export default class LoginName extends React.Component {
             <View style={styles.loginButtonWrapper}>
               {!phoneSubmitted && (
                 <Button
-                  style={styles.loginButton}
-                  buttonStyle={{
-                    backgroundColor: "#A1C146",
-                    padding: 10,
-                    borderRadius: 0
-                  }}
-                  titleStyle={{
-                    fontSize: 30
-                  }}
-                  disabledStyle={{
-                    backgroundColor: "#C1D870"
-                  }}
+                  buttonStyle={styles.loginButton}
+                  titleStyle={styles.loginButtonTitle}
+                  disabledStyle={styles.loginButtonDisabled}
                   disabled={phoneNumber == ""}
                   title="Done"
                   onPress={
@@ -593,18 +566,9 @@ export default class LoginName extends React.Component {
 
               {phoneSubmitted && (
                 <Button
-                  style={styles.loginButton}
-                  buttonStyle={{
-                    backgroundColor: "#A1C146",
-                    padding: 10,
-                    borderRadius: 0
-                  }}
-                  titleStyle={{
-                    fontSize: 30
-                  }}
-                  disabledStyle={{
-                    backgroundColor: "#C1D870"
-                  }}
+                  buttonStyle={styles.loginButton}
+                  titleStyle={styles.loginButtonTitle}
+                  disabledStyle={styles.loginButtonDisabled}
                   disabled={verificationCode == ""}
                   title="Done"
                   onPress={
@@ -621,7 +585,7 @@ export default class LoginName extends React.Component {
     );
   }
 }
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   kb: {
     flex: 1
   },
@@ -630,27 +594,43 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     backgroundColor: "#87e5d3"
   },
+  loginHeader: {
+    fontSize: "24rem",
+    color: "#000",
+    fontFamily: "Quicksand",
+    textAlign: "center",
+    paddingVertical: "5rem"
+  },
+  loginSubHeader: {
+    fontFamily: "Quicksand",
+    color: "#000",
+    marginHorizontal: "10rem",
+    fontSize: "18rem",
+    textAlign: "center"
+  },
   loginButtonWrapper: {
     backgroundColor: "#A1C146"
   },
   loginButton: {
+    backgroundColor: "#6E8E13",
+    padding: "5rem",
     borderRadius: 0
+  },
+  loginButtonTitle: {
+    fontSize: "26rem",
+    fontFamily: "Quicksand"
+  },
+  loginButtonDisabled: {
+    backgroundColor: "#A1C146"
   },
   buttonGroup: {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
+    width: "100%",
     alignSelf: "center",
-    paddingVertical: 15,
-    width: "100%"
-  },
-  textInput: {
-    height: 40,
-    width: "90%",
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 20
+    paddingVertical: "10rem"
   },
   backButton: {
     justifyContent: "center",
@@ -661,10 +641,10 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     position: "relative",
     width: "100%",
-    paddingBottom: 5
   },
   backIcon: {
     position: "absolute",
-    left: 10
-  }
+    left: 10,
+    padding: "5rem"
+  },
 });

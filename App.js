@@ -1,4 +1,4 @@
-import React from "react";
+import React, {Component}from "react";
 import {
   StyleSheet,
   Platform,
@@ -6,9 +6,10 @@ import {
   Text,
   View,
   StatusBar,
-  Dimensions
+  Dimensions,
+  BackHandler
 } from "react-native";
-import { StackNavigator,DrawerNavigator } from "react-navigation";
+import { StackNavigator, DrawerNavigator } from "react-navigation";
 // import the different screens
 import Loading from "./Loading";
 
@@ -41,15 +42,26 @@ const firebaseConfig = {
   messagingSenderId: "506017999540"
 };
 StatusBar.setHidden(true);
+let currentPage = "";
 const entireScreenWidth = Dimensions.get("window").width;
 EStyleSheet.build({ $rem: entireScreenWidth / 380 });
 
 firebase.analytics().logEvent("opened");
-
-
+// gets the current screen from navigation state
+function getCurrentRouteName(navigationState) {
+  if (!navigationState) {
+    return null;
+  }
+  const route = navigationState.routes[navigationState.index];
+  // dive into nested navigators
+  if (route.routes) {
+    return getCurrentRouteName(route);
+  }
+  return route.routeName;
+}
 
 // create our app's navigation stack
-const App = StackNavigator(
+const Nav = StackNavigator(
   {
     Loading: {
       screen: Loading
@@ -57,13 +69,13 @@ const App = StackNavigator(
     Walkthrough: {
       screen: Walkthrough
     },
-    PrivacyPolicy:{
+    PrivacyPolicy: {
       screen: PrivacyPolicy
     },
     PrivateFeed: {
       screen: PrivateFeed
     },
-    ImageView:{
+    ImageView: {
       screen: ImageView
     },
     LoginPhone: {
@@ -108,8 +120,41 @@ const App = StackNavigator(
     headerMode: "none",
     header: null,
     navigationOptions: {
-      gesturesEnabled: false,
-  },
+      gesturesEnabled: false
+    }
   }
 );
-export default App;
+
+export default class App extends Component {
+  constructor() {
+    super();
+    this.state = {
+      currentPage: ''
+    };
+  }
+  componentDidMount(){
+    BackHandler.addEventListener("hardwareBackPress", () => {
+      if (this.state.currentPage =="Walkthrough" || this.state.currentPage == "Menu")
+      return true;
+      else return false;
+    });
+  }
+  render(){
+    let self = this
+
+    return (
+      <Nav
+        onNavigationStateChange={(prevState, currentState) => {
+          const currentScreen = getCurrentRouteName(currentState);
+          const prevScreen = getCurrentRouteName(prevState);
+    
+          if (prevScreen !== currentScreen) {
+            self.setState({currentPage: currentScreen});
+          }
+        }}
+      />
+    )
+  }
+
+
+}

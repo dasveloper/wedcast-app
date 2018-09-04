@@ -1,5 +1,6 @@
 import Orientation from "react-native-orientation-locker";
 import Spinner from "react-native-loading-spinner-overlay";
+import EStyleSheet from "react-native-extended-stylesheet";
 
 import React from "react";
 import {
@@ -98,6 +99,40 @@ export default class LoginAvatar extends React.Component {
                     if (error) {
                       //alert(error);
                     } else {
+                      let userObj = {
+                        userName: user.displayName,
+                        avatar: user.photoUrl,
+                        password: "wedcast"
+                      };
+                      firebase
+                        .database()
+                        .ref(
+                          `feeds/feedNew/examplewedcast/members/${
+                            firebase.auth().currentUser.uid
+                          }`
+                        )
+                        .set(userObj, function(error) {
+                          if (error)
+                            self.setState({
+                              errorMessage: "Incorrect password"
+                            });
+                          else {
+                            const exampleWedcast = {
+                              castId: "examplewedcast",
+                              castType: 0,
+                              feedId: "f9mro3",
+                              feedName: "Example Wedcast",
+                              owner: "zuk3xKCbnPhax3kUk5yWiMJyDHu2",
+                              startedAt: 1535386373761
+                            };
+
+                            firebase
+                              .database()
+                              .ref(`users/${user.uid}/feedList/examplewedcast`)
+                              .set(exampleWedcast, function(error) {});
+                          }
+                        });
+
                       self.props.navigation.navigate("Menu", {
                         currentUser: user,
                         newUser: true
@@ -190,7 +225,7 @@ export default class LoginAvatar extends React.Component {
           >
             {this.state.avatarUri && (
               <Avatar
-                size={this.state.smallScreen ? 150 : 300}
+                size={this.state.smallScreen ? 200 : 300}
                 rounded
                 source={{ uri: this.state.avatarUri }}
                 activeOpacity={0.7}
@@ -207,16 +242,9 @@ export default class LoginAvatar extends React.Component {
           </View>
           <View style={styles.inputWrapper}>
             <Button
-              buttonStyle={{
-                backgroundColor: "#1F9FAC",
-                borderRadius: 5,
-                height: 60,
-                margin: 20
-              }}
-              titleStyle={{
-                fontSize: 24,
-                fontFamily: "Quicksand"
-              }}
+              buttonStyle={styles.addPictureButton}
+              titleStyle={styles.addPicture}
+               
               title="Add a profile picture"
               onPress={() => {
                 Orientation.unlockAllOrientations();
@@ -243,10 +271,22 @@ export default class LoginAvatar extends React.Component {
     );
   }
 }
-const styles = StyleSheet.create({
+const styles = EStyleSheet.create({
   container: {
     flex: 1,
     flexDirection: "column"
+  },
+  addPicture:{
+    
+      fontSize: "24rem",
+      fontFamily: "Quicksand"
+    
+  },
+  addPictureButton:{
+    backgroundColor: "#1F9FAC",
+    borderRadius: 5,
+    height: "50rem",
+    margin: "20rem"
   },
   kb: {
     flex: 1
@@ -267,34 +307,25 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     position: "relative",
     width: "100%",
-    paddingBottom: 5
   },
   backIcon: {
     position: "absolute",
-    left: 10
+    left: 10,
+    padding: "5rem"
   },
   loginHeader: {
-    fontSize: 24,
+    fontSize: "24rem",
     color: "#000",
     fontFamily: "Quicksand",
-    textAlign: "center"
+    textAlign: "center",
+    paddingVertical: "5rem"
   },
   loginSubHeader: {
     fontFamily: "Quicksand",
-    marginTop: 5,
     color: "#000",
-    marginHorizontal: 10,
-    fontSize: 18,
+    marginHorizontal: "10rem",
+    fontSize: "18rem",
     textAlign: "center"
-  },
-  returnUser: {
-    marginTop: 10,
-    textAlign: "center"
-  },
-  returnUserText: {
-    color: "blue",
-    fontSize: 14,
-    fontFamily: "Quicksand"
   },
   //Bottom input wrapper
   inputWrapper: {
@@ -302,28 +333,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     flexDirection: "column"
   },
-  //Login Input
-  loginInput: {
-    borderRadius: 5,
-    padding: 10,
-    alignSelf: "center",
-    marginBottom: 20,
-    borderBottomWidth: 0,
-    width: "90%",
-    fontSize: 24,
-    height: 60
-  },
   //Login Button
   loginButtonWrapper: {
     backgroundColor: "#A1C146"
   },
   loginButton: {
     backgroundColor: "#6E8E13",
-    padding: 10,
+    padding: "5rem",
     borderRadius: 0
   },
   loginButtonTitle: {
-    fontSize: 30,
+    fontSize: "26rem",
     fontFamily: "Quicksand"
   },
   loginButtonDisabled: {
@@ -336,13 +356,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     alignSelf: "center",
-    paddingVertical: 15
-  },
-  textInput: {
-    height: 40,
-    width: "90%",
-    borderColor: "gray",
-    borderWidth: 1,
-    marginBottom: 20
+    paddingVertical: "10rem"
   }
 });
